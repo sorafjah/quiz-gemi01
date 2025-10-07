@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クイズアプリ</title>
+    <!-- Tailwind CSSを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 基本的なスタイル設定 */
+        body {
+            font-family: 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+        }
+        /* 各画面の表示・非表示を制御 */
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+        /* 画像プレビューのスタイル */
+        .image-preview {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            background-color: #e5e7eb; /* gray-200 */
+        }
+        /* 選択肢ボタンのスタイル */
+        .choice-btn {
+            transition: all 0.3s ease;
+        }
+        /* 正解・不正解時のスタイル */
+        .correct {
+            background-color: #10B981 !important; /* emerald-500 */
+            color: white !important;
+            border-color: #059669 !important; /* emerald-600 */
+        }
+        .incorrect {
+            background-color: #EF4444 !important; /* red-500 */
+            color: white !important;
+            border-color: #DC2626 !important; /* red-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="container mx-auto p-4 max-w-2xl bg-white rounded-2xl shadow-lg">
+
+        <!-- トップ画面 -->
+        <div id="home-screen" class="screen active text-center p-8">
+            <h1 class="text-4xl font-bold mb-12 text-gray-800">クイズアプリ</h1>
+            <div class="space-y-6">
+                <button id="go-to-create-btn" class="w-full bg-blue-500 text-white font-bold py-4 px-6 rounded-lg hover:bg-blue-600 transition duration-300 text-xl shadow-md">
+                    クイズを作る
+                </button>
+                <div class="relative">
+                    <input type="text" id="quiz-name-input" placeholder="クイズ名を入力" class="w-full border-2 border-gray-300 p-4 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-lg">
+                    <button id="start-quiz-btn" class="absolute right-2 top-1/2 -translate-y-1/2 bg-green-500 text-white font-bold py-3 px-5 rounded-lg hover:bg-green-600 transition duration-300 text-lg shadow-md">
+                        クイズをする
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- クイズ作成画面 -->
+        <div id="create-screen" class="screen p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">クイズ作成</h2>
+                <button id="back-to-home-from-create" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-300">戻る</button>
+            </div>
+            <input type="text" id="quiz-title-input" placeholder="クイズのタイトル" class="w-full border-2 border-gray-300 p-3 mb-6 rounded-lg text-lg">
+            
+            <div id="questions-container" class="space-y-8">
+                <!-- 問題入力フォームはJSでここに追加されます -->
+            </div>
+
+            <div class="mt-8 flex space-x-4">
+                <button id="add-question-btn" class="flex-1 bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-300">問題を追加</button>
+                <button id="save-quiz-btn" class="flex-1 bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition duration-300">クイズを保存</button>
+            </div>
+        </div>
+
+        <!-- クイズ実行画面 -->
+        <div id="play-screen" class="screen p-6">
+             <div class="flex justify-between items-center mb-4">
+                <h2 id="quiz-title-display" class="text-2xl font-bold text-gray-700"></h2>
+                <button id="back-to-home-from-play" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-300">クイズ終了</button>
+            </div>
+            
+            <div id="question-area" class="text-center">
+                <img id="question-image" src="" alt="問題の画像" class="mx-auto mb-4 rounded-lg shadow-md max-h-60" onerror="this.style.display='none'">
+                <p id="question-text" class="text-2xl font-semibold mb-8 text-gray-800 min-h-[3rem]"></p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button id="choice-a-btn" data-choice="A" class="choice-btn w-full border-4 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
+                        <img id="choice-a-image" src="" alt="選択肢Aの画像" class="mx-auto mb-2 image-preview" onerror="this.style.display='none'">
+                        <span id="choice-a-text" class="text-xl font-medium text-gray-700"></span>
+                    </button>
+                    <button id="choice-b-btn" data-choice="B" class="choice-btn w-full border-4 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
+                        <img id="choice-b-image" src="" alt="選択肢Bの画像" class="mx-auto mb-2 image-preview" onerror="this.style.display='none'">
+                        <span id="choice-b-text" class="text-xl font-medium text-gray-700"></span>
+                    </button>
+                </div>
+
+                <div id="result-area" class="mt-6 text-center">
+                    <p id="result-message" class="text-4xl font-bold"></p>
+                    <button id="next-question-btn" class="mt-4 bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition duration-300 text-lg hidden">次の問題へ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM要素の取得
+            const screens = document.querySelectorAll('.screen');
+            const goToCreateBtn = document.getElementById('go-to-create-btn');
+            const startQuizBtn = document.getElementById('start-quiz-btn');
+            const backToHomeFromCreateBtn = document.getElementById('back-to-home-from-create');
+            const backToHomeFromPlayBtn = document.getElementById('back-to-home-from-play');
+            
+            const createScreen = {
+                titleInput: document.getElementById('quiz-title-input'),
+                questionsContainer: document.getElementById('questions-container'),
+                addQuestionBtn: document.getElementById('add-question-btn'),
+                saveQuizBtn: document.getElementById('save-quiz-btn'),
+            };
+
+            const playScreen = {
+                titleDisplay: document.getElementById('quiz-title-display'),
+                questionImage: document.getElementById('question-image'),
+                questionText: document.getElementById('question-text'),
+                choiceABtn: document.getElementById('choice-a-btn'),
+                choiceAImage: document.getElementById('choice-a-image'),
+                choiceAText: document.getElementById('choice-a-text'),
+                choiceBBtn: document.getElementById('choice-b-btn'),
+                choiceBImage: document.getElementById('choice-b-image'),
+                choiceBText: document.getElementById('choice-b-text'),
+                resultMessage: document.getElementById('result-message'),
+                nextQuestionBtn: document.getElementById('next-question-btn'),
+            };
+            
+            // アプリの状態
+            let quizzes = JSON.parse(localStorage.getItem('quizzes')) || {};
+            let currentQuiz = null;
+            let currentQuestionIndex = 0;
+
+            // --- 画面遷移ロジック ---
+            const showScreen = (screenId) => {
+                screens.forEach(screen => {
+                    screen.classList.toggle('active', screen.id === screenId);
+                });
+            };
+
+            goToCreateBtn.addEventListener('click', () => {
+                showScreen('create-screen');
+                createScreen.titleInput.value = '';
+                createScreen.questionsContainer.innerHTML = '';
+                addQuestionForm(); // 最初の問題フォームを追加
+            });
+            
+            backToHomeFromCreateBtn.addEventListener('click', () => showScreen('home-screen'));
+            backToHomeFromPlayBtn.addEventListener('click', () => showScreen('home-screen'));
+
+            // --- クイズ作成ロジック ---
+            const addQuestionForm = () => {
+                const questionCount = createScreen.questionsContainer.children.length + 1;
+                const formHtml = `
+                    <div class="question-form bg-gray-50 p-6 rounded-lg border-2 border-dashed">
+                        <h3 class="text-xl font-bold mb-4 text-gray-700">問題 ${questionCount}</h3>
+                        <div class="space-y-4">
+                            <input type="text" class="question-image-url w-full p-2 border rounded" placeholder="問題の画像URL（任意）">
+                            <textarea class="question-text w-full p-2 border rounded" placeholder="問題文"></textarea>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- 選択肢 A -->
+                                <div class="choice-section bg-white p-4 rounded border">
+                                    <p class="font-bold mb-2">選択肢 A</p>
+                                    <input type="text" class="choice-a-image-url w-full p-2 border rounded" placeholder="選択肢Aの画像URL">
+                                    <input type="text" class="choice-a-text w-full p-2 border rounded mt-2" placeholder="選択肢Aのテキスト">
+                                </div>
+                                <!-- 選択肢 B -->
+                                <div class="choice-section bg-white p-4 rounded border">
+                                    <p class="font-bold mb-2">選択肢 B</p>
+                                    <input type="text" class="choice-b-image-url w-full p-2 border rounded" placeholder="選択肢Bの画像URL">
+                                    <input type="text" class="choice-b-text w-full p-2 border rounded mt-2" placeholder="選択肢Bのテキスト">
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-2">
+                                <p class="font-bold mb-2">正解は？</p>
+                                <div class="inline-flex rounded-md shadow-sm" role="group">
+                                  <input type="radio" name="correct-answer-${questionCount}" id="a-${questionCount}" value="A" class="hidden peer/a" checked>
+                                  <label for="a-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg cursor-pointer peer-checked/a:bg-blue-500 peer-checked/a:text-white hover:bg-gray-100">A</label>
+                                  
+                                  <input type="radio" name="correct-answer-${questionCount}" id="b-${questionCount}" value="B" class="hidden peer/b">
+                                  <label for="b-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md cursor-pointer peer-checked/b:bg-blue-500 peer-checked/b:text-white hover:bg-gray-100">B</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                createScreen.questionsContainer.insertAdjacentHTML('beforeend', formHtml);
+            };
+
+            createScreen.addQuestionBtn.addEventListener('click', addQuestionForm);
+
+            createScreen.saveQuizBtn.addEventListener('click', () => {
+                const title = createScreen.titleInput.value.trim();
+                if (!title) {
+                    alert('クイズのタイトルを入力してください。');
+                    return;
+                }
+
+                const questionForms = createScreen.questionsContainer.querySelectorAll('.question-form');
+                if (questionForms.length === 0) {
+                    alert('最低1問は問題を作成してください。');
+                    return;
+                }
+                
+                const newQuiz = [];
+                let isFormValid = true;
+
+                questionForms.forEach((form, index) => {
+                    const questionText = form.querySelector('.question-text').value.trim();
+                    const choiceAText = form.querySelector('.choice-a-text').value.trim();
+                    const choiceBText = form.querySelector('.choice-b-text').value.trim();
+
+                    if (!questionText || !choiceAText || !choiceBText) {
+                        isFormValid = false;
+                    }
+
+                    newQuiz.push({
+                        questionImage: form.querySelector('.question-image-url').value.trim(),
+                        questionText: questionText,
+                        choiceAImage: form.querySelector('.choice-a-image-url').value.trim(),
+                        choiceAText: choiceAText,
+                        choiceBImage: form.querySelector('.choice-b-image-url').value.trim(),
+                        choiceBText: choiceBText,
+                        correctAnswer: form.querySelector(`input[name="correct-answer-${index+1}"]:checked`).value
+                    });
+                });
+                
+                if (!isFormValid) {
+                    alert('すべての問題文と選択肢テキストを入力してください。');
+                    return;
+                }
+
+                quizzes[title] = newQuiz;
+                localStorage.setItem('quizzes', JSON.stringify(quizzes));
+                alert(`クイズ「${title}」を保存しました！`);
+                showScreen('home-screen');
+            });
+
+
+            // --- クイズ実行ロジック ---
+            startQuizBtn.addEventListener('click', () => {
+                const quizName = document.getElementById('quiz-name-input').value.trim();
+                if (!quizName) {
+                    alert('クイズ名を入力してください。');
+                    return;
+                }
+
+                if (quizzes[quizName]) {
+                    currentQuiz = quizzes[quizName];
+                    currentQuestionIndex = 0;
+                    displayQuestion();
+                    showScreen('play-screen');
+                } else {
+                    alert('その名前のクイズは見つかりませんでした。');
+                }
+            });
+
+            const displayQuestion = () => {
+                const question = currentQuiz[currentQuestionIndex];
+
+                playScreen.titleDisplay.textContent = `${document.getElementById('quiz-name-input').value.trim()} (${currentQuestionIndex + 1}/${currentQuiz.length})`;
+
+                // 画像表示の制御
+                playScreen.questionImage.src = question.questionImage;
+                playScreen.questionImage.style.display = question.questionImage ? 'block' : 'none';
+                playScreen.choiceAImage.src = question.choiceAImage;
+                playScreen.choiceAImage.style.display = question.choiceAImage ? 'block' : 'none';
+                playScreen.choiceBImage.src = question.choiceBImage;
+                playScreen.choiceBImage.style.display = question.choiceBImage ? 'block' : 'none';
+
+                playScreen.questionText.textContent = question.questionText;
+                playScreen.choiceAText.textContent = question.choiceAText;
+                playScreen.choiceBText.textContent = question.choiceBText;
+
+                // スタイルとボタンの状態をリセット
+                [playScreen.choiceABtn, playScreen.choiceBBtn].forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('correct', 'incorrect');
+                });
+                playScreen.resultMessage.textContent = '';
+                playScreen.nextQuestionBtn.classList.add('hidden');
+            };
+
+            const handleChoice = (e) => {
+                const selectedButton = e.currentTarget;
+                const selectedChoice = selectedButton.dataset.choice;
+                const question = currentQuiz[currentQuestionIndex];
+                const correctChoice = question.correctAnswer;
+
+                playScreen.choiceABtn.disabled = true;
+                playScreen.choiceBBtn.disabled = true;
+
+                if (selectedChoice === correctChoice) {
+                    playScreen.resultMessage.textContent = "正解！";
+                    playScreen.resultMessage.style.color = '#10B981'; // emerald-500
+                    selectedButton.classList.add('correct');
+                } else {
+                    playScreen.resultMessage.textContent = "不正解...";
+                     playScreen.resultMessage.style.color = '#EF4444'; // red-500
+                    selectedButton.classList.add('incorrect');
+                    if (correctChoice === 'A') {
+                        playScreen.choiceABtn.classList.add('correct');
+                    } else {
+                        playScreen.choiceBBtn.classList.add('correct');
+                    }
+                }
+
+                if (currentQuestionIndex < currentQuiz.length - 1) {
+                    playScreen.nextQuestionBtn.textContent = '次の問題へ';
+                } else {
+                    playScreen.nextQuestionBtn.textContent = 'クイズ終了';
+                }
+                playScreen.nextQuestionBtn.classList.remove('hidden');
+            };
+
+            playScreen.choiceABtn.addEventListener('click', handleChoice);
+            playScreen.choiceBBtn.addEventListener('click', handleChoice);
+            
+            playScreen.nextQuestionBtn.addEventListener('click', () => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < currentQuiz.length) {
+                    displayQuestion();
+                } else {
+                    alert('クイズ終了です！お疲れ様でした。');
+                    showScreen('home-screen');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
