@@ -183,33 +183,45 @@
             });
         };
         
+        // ★ 新機能：アプリを無効化し、エラーメッセージを表示
+        function disableApp(message) {
+            const homeScreen = document.getElementById('home-screen');
+            homeScreen.innerHTML = `
+                <div class="p-8 text-center text-red-600 bg-red-50 rounded-lg">
+                    <h2 class="text-2xl font-bold mb-4">アプリ エラー</h2>
+                    <p class="text-left whitespace-pre-wrap">${message}</p>
+                </div>`;
+            showScreen('home-screen'); // エラー表示を確実に行う
+        }
+
         // --- メイン処理 ---
         document.addEventListener('DOMContentLoaded', () => {
-            onAuthStateChanged(auth, async (user) => {
+            onAuthStateChanged(auth, user => {
                 if (user) {
                     userId = user.uid;
-                } else {
-                    try {
-                        await signInAnonymously(auth);
-                    } catch (error) {
-                        console.error("Firebase Anonymous Sign-In Error:", error);
-                        if (error.code === 'auth/configuration-not-found') {
-                             showAlert(
-                                'Firebase認証エラー\n\n' +
-                                '匿名サインインが有効になっていません。Firebaseコンソールの「Authentication」設定で、「Sign-in method」タブから「匿名」プロバイダを有効にしてください。'
-                            );
-                        } else {
-                            showAlert(`Firebaseへの接続中に予期せぬエラーが発生しました: ${error.message}`);
-                        }
-                    }
                 }
+                // ユーザーがnullでも、signInAnonymouslyが後続処理でエラーをハンドル
             });
+            
+            // 匿名サインインを試みる
+            signInAnonymously(auth).catch(error => {
+                console.error("Firebase Anonymous Sign-In Error:", error);
+                let errorMessage = `Firebaseへの接続中に予期せぬエラーが発生しました:\n${error.message}`;
+                if (error.code === 'auth/configuration-not-found') {
+                     errorMessage = '【Firebase認証エラー】\n\n' +
+                        '匿名サインインが有効になっていません。\n\n' +
+                        '【解決策】\nFirebaseコンソールの「Authentication」設定で、「Sign-in method」タブから「匿名」プロバイダを有効にしてください。';
+                }
+                disableApp(errorMessage);
+            });
+
             setupEventListeners();
         });
         
         // --- イベントリスナー設定 ---
         function setupEventListeners() {
             document.getElementById('go-to-create-btn').addEventListener('click', () => {
+                if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
                 showScreen('create-screen');
                 document.getElementById('quiz-title-input').value = '';
                 document.getElementById('questions-container').innerHTML = '';
@@ -224,7 +236,7 @@
             document.getElementById('choice-b-btn').addEventListener('click', handleChoice);
             document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
             
-            // ★ 新機能：画像URLプレビュー機能（イベント委任）
+            // 画像URLプレビュー機能（イベント委任）
             document.getElementById('questions-container').addEventListener('input', (e) => {
                 if (e.target.classList.contains('url-input')) {
                     const input = e.target;
@@ -232,12 +244,7 @@
                     const rawUrl = input.value;
                     const transformedUrl = transformGoogleDriveUrl(rawUrl);
                     
-                    if (transformedUrl) {
-                        previewImg.src = transformedUrl;
-                    } else {
-                        // URLが空の場合はプレースホルダーに戻す
-                        previewImg.src = 'https://placehold.co/64x64/f3f4f6/f3f4f6?text=.';
-                    }
+                    previewImg.src = transformedUrl || 'https://placehold.co/64x64/f3f4f6/f3f4f6?text=.';
 
                     // 画像が読み込めなかった場合のエラー処理
                     previewImg.onerror = () => {
@@ -247,13 +254,15 @@
             });
         }
 
-        // --- Google Drive URL変換 ---
+        // ★ 改善版：Google Drive URL変換 ---
         function transformGoogleDriveUrl(url) {
-            if (!url || !url.includes('drive.google.com')) {
+            if (typeof url !== 'string' || !url.includes('drive.google.com')) {
                 return url; // Google DriveのURLでなければそのまま返す
             }
-            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+            // 共有リンクからIDを抽出するための正規表現
+            const match = url.match(/drive\.google\.com\/(?:file\/d\/|uc\?id=|open\?id=)([a-zA-Z0-9_-]{28,})/);
             if (match && match[1]) {
+                // 画像表示用のURLに変換
                 return `https://drive.google.com/uc?export=view&id=${match[1]}`;
             }
             return url; // IDが抽出できなければそのまま返す
@@ -303,7 +312,7 @@
         }
         
         async function saveQuiz() {
-            if (!userId) { showAlert('認証情報が取得できていません。'); return; }
+            if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
             const title = document.getElementById('quiz-title-input').value.trim();
             if (!title) { showAlert('クイズのタイトルを入力してください。'); return; }
             const questionForms = document.querySelectorAll('.question-form');
@@ -344,6 +353,7 @@
         
         // --- クイズ実行 ---
         async function startQuiz() {
+            if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
             const quizName = document.getElementById('quiz-name-input').value.trim();
             if (!quizName) { showAlert('クイズ名を入力してください。'); return; }
 
