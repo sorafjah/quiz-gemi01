@@ -51,6 +51,7 @@
         #custom-alert-box {
             background: white; padding: 2rem; border-radius: 1rem; text-align: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 90%; width: 400px;
+            white-space: pre-wrap; /* 改行を有効にする */
         }
     </style>
 </head>
@@ -180,7 +181,19 @@
                 if (user) {
                     userId = user.uid;
                 } else {
-                    await signInAnonymously(auth);
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Firebase Anonymous Sign-In Error:", error);
+                        if (error.code === 'auth/configuration-not-found') {
+                             showAlert(
+                                'Firebase認証エラー\n\n' +
+                                '匿名サインインが有効になっていません。Firebaseコンソールの「Authentication」設定で、「Sign-in method」タブから「匿名」プロバイダを有効にしてください。'
+                            );
+                        } else {
+                            showAlert(`Firebaseへの接続中に予期せぬエラーが発生しました: ${error.message}`);
+                        }
+                    }
                 }
             });
             setupEventListeners();
