@@ -23,6 +23,14 @@
             border-radius: 0.5rem;
             background-color: #e5e7eb; /* gray-200 */
         }
+        .form-image-preview {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+            border: 1px solid #d1d5db; /* gray-300 */
+             background-color: #f3f4f6; /* gray-100 */
+        }
         
         /* 選択肢ボタンのスタイル */
         .choice-btn { transition: all 0.3s ease; }
@@ -215,6 +223,28 @@
             document.getElementById('choice-a-btn').addEventListener('click', handleChoice);
             document.getElementById('choice-b-btn').addEventListener('click', handleChoice);
             document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+            
+            // ★ 新機能：画像URLプレビュー機能（イベント委任）
+            document.getElementById('questions-container').addEventListener('input', (e) => {
+                if (e.target.classList.contains('url-input')) {
+                    const input = e.target;
+                    const previewImg = input.nextElementSibling; // inputの隣にあるimg要素を取得
+                    const rawUrl = input.value;
+                    const transformedUrl = transformGoogleDriveUrl(rawUrl);
+                    
+                    if (transformedUrl) {
+                        previewImg.src = transformedUrl;
+                    } else {
+                        // URLが空の場合はプレースホルダーに戻す
+                        previewImg.src = 'https://placehold.co/64x64/f3f4f6/f3f4f6?text=.';
+                    }
+
+                    // 画像が読み込めなかった場合のエラー処理
+                    previewImg.onerror = () => {
+                        previewImg.src = 'https://placehold.co/64x64/fecaca/991b1b?text=Error';
+                    };
+                }
+            });
         }
 
         // --- Google Drive URL変換 ---
@@ -237,17 +267,26 @@
                 <div class="question-form bg-gray-50 p-6 rounded-lg border-2 border-dashed">
                     <h3 class="text-xl font-bold mb-4 text-gray-700">問題 ${questionCount}</h3>
                     <div class="space-y-4">
-                        <input type="text" class="question-image-url w-full p-2 border rounded" placeholder="問題の画像URL (Google Driveなど)">
+                        <div class="flex items-center space-x-2">
+                           <input type="text" class="question-image-url w-full p-2 border rounded url-input" placeholder="問題の画像URL (Google Driveなど)">
+                           <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
+                        </div>
                         <textarea class="question-text w-full p-2 border rounded" placeholder="問題文"></textarea>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="choice-section bg-white p-4 rounded border">
                                 <p class="font-bold mb-2">選択肢 A</p>
-                                <input type="text" class="choice-a-image-url w-full p-2 border rounded" placeholder="選択肢Aの画像URL">
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" class="choice-a-image-url w-full p-2 border rounded url-input" placeholder="選択肢Aの画像URL">
+                                    <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
+                                </div>
                                 <input type="text" class="choice-a-text w-full p-2 border rounded mt-2" placeholder="選択肢Aのテキスト">
                             </div>
                             <div class="choice-section bg-white p-4 rounded border">
                                 <p class="font-bold mb-2">選択肢 B</p>
-                                <input type="text" class="choice-b-image-url w-full p-2 border rounded" placeholder="選択肢Bの画像URL">
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" class="choice-b-image-url w-full p-2 border rounded url-input" placeholder="選択肢Bの画像URL">
+                                    <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
+                                </div>
                                 <input type="text" class="choice-b-text w-full p-2 border rounded mt-2" placeholder="選択肢Bのテキスト">
                             </div>
                         </div>
