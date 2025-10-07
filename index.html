@@ -12,12 +12,9 @@
             font-family: 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
         }
         /* 各画面の表示・非表示を制御 */
-        .screen {
-            display: none;
-        }
-        .screen.active {
-            display: block;
-        }
+        .screen { display: none; }
+        .screen.active { display: block; }
+
         /* 画像プレビューのスタイル */
         .image-preview {
             width: 150px;
@@ -26,27 +23,40 @@
             border-radius: 0.5rem;
             background-color: #e5e7eb; /* gray-200 */
         }
+        
         /* 選択肢ボタンのスタイル */
-        .choice-btn {
-            transition: all 0.3s ease;
+        .choice-btn { transition: all 0.3s ease; }
+        .correct { background-color: #10B981 !important; color: white !important; border-color: #059669 !important; }
+        .incorrect { background-color: #EF4444 !important; color: white !important; border-color: #DC2626 !important; }
+
+        /* ローディングオーバーレイ */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); display: none;
+            justify-content: center; align-items: center; z-index: 9999;
         }
-        /* 正解・不正解時のスタイル */
-        .correct {
-            background-color: #10B981 !important; /* emerald-500 */
-            color: white !important;
-            border-color: #059669 !important; /* emerald-600 */
+        .spinner {
+            border: 8px solid #f3f3f3; border-top: 8px solid #3498db;
+            border-radius: 50%; width: 60px; height: 60px;
+            animation: spin 1s linear infinite;
         }
-        .incorrect {
-            background-color: #EF4444 !important; /* red-500 */
-            color: white !important;
-            border-color: #DC2626 !important; /* red-600 */
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* カスタムアラート */
+        #custom-alert {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); display: none;
+            justify-content: center; align-items: center; z-index: 9998;
+        }
+        #custom-alert-box {
+            background: white; padding: 2rem; border-radius: 1rem; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 90%; width: 400px;
         }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
     <div class="container mx-auto p-4 max-w-2xl bg-white rounded-2xl shadow-lg">
-
         <!-- トップ画面 -->
         <div id="home-screen" class="screen active text-center p-8">
             <h1 class="text-4xl font-bold mb-12 text-gray-800">クイズアプリ</h1>
@@ -87,22 +97,19 @@
                 <h2 id="quiz-title-display" class="text-2xl font-bold text-gray-700"></h2>
                 <button id="back-to-home-from-play" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-300">クイズ終了</button>
             </div>
-            
             <div id="question-area" class="text-center">
-                <img id="question-image" src="" alt="問題の画像" class="mx-auto mb-4 rounded-lg shadow-md max-h-60" onerror="this.style.display='none'">
+                <img id="question-image" src="" alt="問題の画像" class="mx-auto mb-4 rounded-lg shadow-md max-h-60" style="display:none;" >
                 <p id="question-text" class="text-2xl font-semibold mb-8 text-gray-800 min-h-[3rem]"></p>
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button id="choice-a-btn" data-choice="A" class="choice-btn w-full border-4 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
-                        <img id="choice-a-image" src="" alt="選択肢Aの画像" class="mx-auto mb-2 image-preview" onerror="this.style.display='none'">
+                        <img id="choice-a-image" src="" alt="選択肢Aの画像" class="mx-auto mb-2 image-preview" style="display:none;">
                         <span id="choice-a-text" class="text-xl font-medium text-gray-700"></span>
                     </button>
                     <button id="choice-b-btn" data-choice="B" class="choice-btn w-full border-4 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
-                        <img id="choice-b-image" src="" alt="選択肢Bの画像" class="mx-auto mb-2 image-preview" onerror="this.style.display='none'">
+                        <img id="choice-b-image" src="" alt="選択肢Bの画像" class="mx-auto mb-2 image-preview" style="display:none;">
                         <span id="choice-b-text" class="text-xl font-medium text-gray-700"></span>
                     </button>
                 </div>
-
                 <div id="result-area" class="mt-6 text-center">
                     <p id="result-message" class="text-4xl font-bold"></p>
                     <button id="next-question-btn" class="mt-4 bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition duration-300 text-lg hidden">次の問題へ</button>
@@ -111,238 +118,275 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // DOM要素の取得
-            const screens = document.querySelectorAll('.screen');
-            const goToCreateBtn = document.getElementById('go-to-create-btn');
-            const startQuizBtn = document.getElementById('start-quiz-btn');
-            const backToHomeFromCreateBtn = document.getElementById('back-to-home-from-create');
-            const backToHomeFromPlayBtn = document.getElementById('back-to-home-from-play');
-            
-            const createScreen = {
-                titleInput: document.getElementById('quiz-title-input'),
-                questionsContainer: document.getElementById('questions-container'),
-                addQuestionBtn: document.getElementById('add-question-btn'),
-                saveQuizBtn: document.getElementById('save-quiz-btn'),
-            };
+    <!-- ローディング表示 -->
+    <div id="loader"><div class="spinner"></div></div>
 
-            const playScreen = {
-                titleDisplay: document.getElementById('quiz-title-display'),
-                questionImage: document.getElementById('question-image'),
-                questionText: document.getElementById('question-text'),
-                choiceABtn: document.getElementById('choice-a-btn'),
-                choiceAImage: document.getElementById('choice-a-image'),
-                choiceAText: document.getElementById('choice-a-text'),
-                choiceBBtn: document.getElementById('choice-b-btn'),
-                choiceBImage: document.getElementById('choice-b-image'),
-                choiceBText: document.getElementById('choice-b-text'),
-                resultMessage: document.getElementById('result-message'),
-                nextQuestionBtn: document.getElementById('next-question-btn'),
-            };
-            
-            // アプリの状態
-            let quizzes = JSON.parse(localStorage.getItem('quizzes')) || {};
-            let currentQuiz = null;
-            let currentQuestionIndex = 0;
+    <!-- カスタムアラート -->
+    <div id="custom-alert">
+        <div id="custom-alert-box">
+            <p id="custom-alert-message" class="mb-6 text-lg"></p>
+            <button id="custom-alert-ok" class="bg-blue-500 text-white font-bold py-2 px-8 rounded-lg hover:bg-blue-600">OK</button>
+        </div>
+    </div>
 
-            // --- 画面遷移ロジック ---
-            const showScreen = (screenId) => {
-                screens.forEach(screen => {
-                    screen.classList.toggle('active', screen.id === screenId);
-                });
-            };
+    <script type="module">
+        // Firebase SDKのインポート
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-            goToCreateBtn.addEventListener('click', () => {
-                showScreen('create-screen');
-                createScreen.titleInput.value = '';
-                createScreen.questionsContainer.innerHTML = '';
-                addQuestionForm(); // 最初の問題フォームを追加
+        // --- Firebase設定 (ご自身の情報に書き換えてください) ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // apiKey: "...",
+            // authDomain: "...",
+            // projectId: "...",
+            // storageBucket: "...",
+            // messagingSenderId: "...",
+            // appId: "..."
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // Firebaseの初期化
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId = null;
+        let currentQuiz = null;
+        let currentQuestionIndex = 0;
+
+        // --- UI制御関数 ---
+        const loader = document.getElementById('loader');
+        const customAlert = document.getElementById('custom-alert');
+        const showLoader = (show) => { loader.style.display = show ? 'flex' : 'none'; };
+        const showAlert = (message) => {
+            document.getElementById('custom-alert-message').textContent = message;
+            customAlert.style.display = 'flex';
+        };
+        document.getElementById('custom-alert-ok').addEventListener('click', () => {
+            customAlert.style.display = 'none';
+        });
+        const showScreen = (screenId) => {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.toggle('active', screen.id === screenId);
             });
-            
-            backToHomeFromCreateBtn.addEventListener('click', () => showScreen('home-screen'));
-            backToHomeFromPlayBtn.addEventListener('click', () => showScreen('home-screen'));
+        };
+        
+        // --- メイン処理 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                } else {
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+            });
+            setupEventListeners();
+        });
+        
+        // --- イベントリスナー設定 ---
+        function setupEventListeners() {
+            document.getElementById('go-to-create-btn').addEventListener('click', () => {
+                showScreen('create-screen');
+                document.getElementById('quiz-title-input').value = '';
+                document.getElementById('questions-container').innerHTML = '';
+                addQuestionForm();
+            });
+            document.getElementById('back-to-home-from-create').addEventListener('click', () => showScreen('home-screen'));
+            document.getElementById('back-to-home-from-play').addEventListener('click', () => showScreen('home-screen'));
+            document.getElementById('add-question-btn').addEventListener('click', addQuestionForm);
+            document.getElementById('save-quiz-btn').addEventListener('click', saveQuiz);
+            document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+            document.getElementById('choice-a-btn').addEventListener('click', handleChoice);
+            document.getElementById('choice-b-btn').addEventListener('click', handleChoice);
+            document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+        }
 
-            // --- クイズ作成ロジック ---
-            const addQuestionForm = () => {
-                const questionCount = createScreen.questionsContainer.children.length + 1;
-                const formHtml = `
-                    <div class="question-form bg-gray-50 p-6 rounded-lg border-2 border-dashed">
-                        <h3 class="text-xl font-bold mb-4 text-gray-700">問題 ${questionCount}</h3>
-                        <div class="space-y-4">
-                            <input type="text" class="question-image-url w-full p-2 border rounded" placeholder="問題の画像URL（任意）">
-                            <textarea class="question-text w-full p-2 border rounded" placeholder="問題文"></textarea>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- 選択肢 A -->
-                                <div class="choice-section bg-white p-4 rounded border">
-                                    <p class="font-bold mb-2">選択肢 A</p>
-                                    <input type="text" class="choice-a-image-url w-full p-2 border rounded" placeholder="選択肢Aの画像URL">
-                                    <input type="text" class="choice-a-text w-full p-2 border rounded mt-2" placeholder="選択肢Aのテキスト">
-                                </div>
-                                <!-- 選択肢 B -->
-                                <div class="choice-section bg-white p-4 rounded border">
-                                    <p class="font-bold mb-2">選択肢 B</p>
-                                    <input type="text" class="choice-b-image-url w-full p-2 border rounded" placeholder="選択肢Bの画像URL">
-                                    <input type="text" class="choice-b-text w-full p-2 border rounded mt-2" placeholder="選択肢Bのテキスト">
-                                </div>
+        // --- Google Drive URL変換 ---
+        function transformGoogleDriveUrl(url) {
+            if (!url || !url.includes('drive.google.com')) {
+                return url; // Google DriveのURLでなければそのまま返す
+            }
+            const match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            }
+            return url; // IDが抽出できなければそのまま返す
+        }
+
+        // --- クイズ作成 ---
+        function addQuestionForm() {
+            const container = document.getElementById('questions-container');
+            const questionCount = container.children.length + 1;
+            const formHtml = `
+                <div class="question-form bg-gray-50 p-6 rounded-lg border-2 border-dashed">
+                    <h3 class="text-xl font-bold mb-4 text-gray-700">問題 ${questionCount}</h3>
+                    <div class="space-y-4">
+                        <input type="text" class="question-image-url w-full p-2 border rounded" placeholder="問題の画像URL (Google Driveなど)">
+                        <textarea class="question-text w-full p-2 border rounded" placeholder="問題文"></textarea>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="choice-section bg-white p-4 rounded border">
+                                <p class="font-bold mb-2">選択肢 A</p>
+                                <input type="text" class="choice-a-image-url w-full p-2 border rounded" placeholder="選択肢Aの画像URL">
+                                <input type="text" class="choice-a-text w-full p-2 border rounded mt-2" placeholder="選択肢Aのテキスト">
                             </div>
-
-                            <div class="text-center mt-2">
-                                <p class="font-bold mb-2">正解は？</p>
-                                <div class="inline-flex rounded-md shadow-sm" role="group">
-                                  <input type="radio" name="correct-answer-${questionCount}" id="a-${questionCount}" value="A" class="hidden peer/a" checked>
-                                  <label for="a-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg cursor-pointer peer-checked/a:bg-blue-500 peer-checked/a:text-white hover:bg-gray-100">A</label>
-                                  
-                                  <input type="radio" name="correct-answer-${questionCount}" id="b-${questionCount}" value="B" class="hidden peer/b">
-                                  <label for="b-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md cursor-pointer peer-checked/b:bg-blue-500 peer-checked/b:text-white hover:bg-gray-100">B</label>
-                                </div>
+                            <div class="choice-section bg-white p-4 rounded border">
+                                <p class="font-bold mb-2">選択肢 B</p>
+                                <input type="text" class="choice-b-image-url w-full p-2 border rounded" placeholder="選択肢Bの画像URL">
+                                <input type="text" class="choice-b-text w-full p-2 border rounded mt-2" placeholder="選択肢Bのテキスト">
+                            </div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <p class="font-bold mb-2">正解は？</p>
+                            <div class="inline-flex rounded-md shadow-sm">
+                                <input type="radio" name="correct-answer-${questionCount}" value="A" class="hidden peer/a" id="a-${questionCount}" checked><label for="a-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg cursor-pointer peer-checked/a:bg-blue-500 peer-checked/a:text-white hover:bg-gray-100">A</label>
+                                <input type="radio" name="correct-answer-${questionCount}" value="B" class="hidden peer/b" id="b-${questionCount}"><label for="b-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md cursor-pointer peer-checked/b:bg-blue-500 peer-checked/b:text-white hover:bg-gray-100">B</label>
                             </div>
                         </div>
                     </div>
-                `;
-                createScreen.questionsContainer.insertAdjacentHTML('beforeend', formHtml);
-            };
-
-            createScreen.addQuestionBtn.addEventListener('click', addQuestionForm);
-
-            createScreen.saveQuizBtn.addEventListener('click', () => {
-                const title = createScreen.titleInput.value.trim();
-                if (!title) {
-                    alert('クイズのタイトルを入力してください。');
-                    return;
-                }
-
-                const questionForms = createScreen.questionsContainer.querySelectorAll('.question-form');
-                if (questionForms.length === 0) {
-                    alert('最低1問は問題を作成してください。');
-                    return;
-                }
-                
-                const newQuiz = [];
-                let isFormValid = true;
-
-                questionForms.forEach((form, index) => {
+                </div>`;
+            container.insertAdjacentHTML('beforeend', formHtml);
+        }
+        
+        async function saveQuiz() {
+            if (!userId) { showAlert('認証情報が取得できていません。'); return; }
+            const title = document.getElementById('quiz-title-input').value.trim();
+            if (!title) { showAlert('クイズのタイトルを入力してください。'); return; }
+            const questionForms = document.querySelectorAll('.question-form');
+            if (questionForms.length === 0) { showAlert('最低1問は問題を作成してください。'); return; }
+            
+            showLoader(true);
+            try {
+                const newQuizData = Array.from(questionForms).map((form, index) => {
                     const questionText = form.querySelector('.question-text').value.trim();
                     const choiceAText = form.querySelector('.choice-a-text').value.trim();
                     const choiceBText = form.querySelector('.choice-b-text').value.trim();
-
                     if (!questionText || !choiceAText || !choiceBText) {
-                        isFormValid = false;
+                        throw new Error(`問題${index + 1}のテキストが入力されていません。`);
                     }
-
-                    newQuiz.push({
+                    return {
                         questionImage: form.querySelector('.question-image-url').value.trim(),
-                        questionText: questionText,
+                        questionText,
                         choiceAImage: form.querySelector('.choice-a-image-url').value.trim(),
-                        choiceAText: choiceAText,
+                        choiceAText,
                         choiceBImage: form.querySelector('.choice-b-image-url').value.trim(),
-                        choiceBText: choiceBText,
-                        correctAnswer: form.querySelector(`input[name="correct-answer-${index+1}"]:checked`).value
-                    });
+                        choiceBText,
+                        correctAnswer: form.querySelector(`input[name="correct-answer-${index + 1}"]:checked`).value
+                    };
                 });
-                
-                if (!isFormValid) {
-                    alert('すべての問題文と選択肢テキストを入力してください。');
-                    return;
-                }
 
-                quizzes[title] = newQuiz;
-                localStorage.setItem('quizzes', JSON.stringify(quizzes));
-                alert(`クイズ「${title}」を保存しました！`);
+                const quizDoc = { title, questions: newQuizData, author: userId, createdAt: new Date() };
+                const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
+                await setDoc(doc(quizzesCol, title), quizDoc);
+
+                showAlert(`クイズ「${title}」を保存しました！`);
                 showScreen('home-screen');
-            });
+            } catch (error) {
+                showAlert(`保存エラー: ${error.message}`);
+            } finally {
+                showLoader(false);
+            }
+        }
+        
+        // --- クイズ実行 ---
+        async function startQuiz() {
+            const quizName = document.getElementById('quiz-name-input').value.trim();
+            if (!quizName) { showAlert('クイズ名を入力してください。'); return; }
 
+            showLoader(true);
+            try {
+                const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
+                const q = query(quizzesCol, where("title", "==", quizName));
+                const querySnapshot = await getDocs(q);
 
-            // --- クイズ実行ロジック ---
-            startQuizBtn.addEventListener('click', () => {
-                const quizName = document.getElementById('quiz-name-input').value.trim();
-                if (!quizName) {
-                    alert('クイズ名を入力してください。');
-                    return;
-                }
-
-                if (quizzes[quizName]) {
-                    currentQuiz = quizzes[quizName];
+                if (querySnapshot.empty) {
+                    showAlert('その名前のクイズは見つかりませんでした。');
+                } else {
+                    const quizDoc = querySnapshot.docs[0].data();
+                    currentQuiz = quizDoc.questions;
                     currentQuestionIndex = 0;
                     displayQuestion();
                     showScreen('play-screen');
-                } else {
-                    alert('その名前のクイズは見つかりませんでした。');
                 }
-            });
+            } catch (error) {
+                showAlert("クイズの読み込み中にエラーが発生しました。");
+            } finally {
+                showLoader(false);
+            }
+        }
+        
+        function displayQuestion() {
+            const question = currentQuiz[currentQuestionIndex];
+            const quizName = document.getElementById('quiz-name-input').value.trim();
+            document.getElementById('quiz-title-display').textContent = `${quizName} (${currentQuestionIndex + 1}/${currentQuiz.length})`;
 
-            const displayQuestion = () => {
-                const question = currentQuiz[currentQuestionIndex];
-
-                playScreen.titleDisplay.textContent = `${document.getElementById('quiz-name-input').value.trim()} (${currentQuestionIndex + 1}/${currentQuiz.length})`;
-
-                // 画像表示の制御
-                playScreen.questionImage.src = question.questionImage;
-                playScreen.questionImage.style.display = question.questionImage ? 'block' : 'none';
-                playScreen.choiceAImage.src = question.choiceAImage;
-                playScreen.choiceAImage.style.display = question.choiceAImage ? 'block' : 'none';
-                playScreen.choiceBImage.src = question.choiceBImage;
-                playScreen.choiceBImage.style.display = question.choiceBImage ? 'block' : 'none';
-
-                playScreen.questionText.textContent = question.questionText;
-                playScreen.choiceAText.textContent = question.choiceAText;
-                playScreen.choiceBText.textContent = question.choiceBText;
-
-                // スタイルとボタンの状態をリセット
-                [playScreen.choiceABtn, playScreen.choiceBBtn].forEach(btn => {
-                    btn.disabled = false;
-                    btn.classList.remove('correct', 'incorrect');
-                });
-                playScreen.resultMessage.textContent = '';
-                playScreen.nextQuestionBtn.classList.add('hidden');
-            };
-
-            const handleChoice = (e) => {
-                const selectedButton = e.currentTarget;
-                const selectedChoice = selectedButton.dataset.choice;
-                const question = currentQuiz[currentQuestionIndex];
-                const correctChoice = question.correctAnswer;
-
-                playScreen.choiceABtn.disabled = true;
-                playScreen.choiceBBtn.disabled = true;
-
-                if (selectedChoice === correctChoice) {
-                    playScreen.resultMessage.textContent = "正解！";
-                    playScreen.resultMessage.style.color = '#10B981'; // emerald-500
-                    selectedButton.classList.add('correct');
-                } else {
-                    playScreen.resultMessage.textContent = "不正解...";
-                     playScreen.resultMessage.style.color = '#EF4444'; // red-500
-                    selectedButton.classList.add('incorrect');
-                    if (correctChoice === 'A') {
-                        playScreen.choiceABtn.classList.add('correct');
-                    } else {
-                        playScreen.choiceBBtn.classList.add('correct');
-                    }
-                }
-
-                if (currentQuestionIndex < currentQuiz.length - 1) {
-                    playScreen.nextQuestionBtn.textContent = '次の問題へ';
-                } else {
-                    playScreen.nextQuestionBtn.textContent = 'クイズ終了';
-                }
-                playScreen.nextQuestionBtn.classList.remove('hidden');
-            };
-
-            playScreen.choiceABtn.addEventListener('click', handleChoice);
-            playScreen.choiceBBtn.addEventListener('click', handleChoice);
+            const qImg = document.getElementById('question-image');
+            const aImg = document.getElementById('choice-a-image');
+            const bImg = document.getElementById('choice-b-image');
             
-            playScreen.nextQuestionBtn.addEventListener('click', () => {
-                currentQuestionIndex++;
-                if (currentQuestionIndex < currentQuiz.length) {
-                    displayQuestion();
-                } else {
-                    alert('クイズ終了です！お疲れ様でした。');
-                    showScreen('home-screen');
-                }
+            const qImgUrl = transformGoogleDriveUrl(question.questionImage);
+            qImg.src = qImgUrl;
+            qImg.style.display = qImgUrl ? 'block' : 'none';
+
+            document.getElementById('question-text').textContent = question.questionText;
+
+            const aImgUrl = transformGoogleDriveUrl(question.choiceAImage);
+            aImg.src = aImgUrl;
+            aImg.style.display = aImgUrl ? 'block' : 'none';
+            document.getElementById('choice-a-text').textContent = question.choiceAText;
+            
+            const bImgUrl = transformGoogleDriveUrl(question.choiceBImage);
+            bImg.src = bImgUrl;
+            bImg.style.display = bImgUrl ? 'block' : 'none';
+            document.getElementById('choice-b-text').textContent = question.choiceBText;
+
+            [document.getElementById('choice-a-btn'), document.getElementById('choice-b-btn')].forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('correct', 'incorrect');
             });
-        });
+            document.getElementById('result-message').textContent = '';
+            document.getElementById('next-question-btn').classList.add('hidden');
+        }
+
+        function handleChoice(e) {
+            const selectedButton = e.currentTarget;
+            const selectedChoice = selectedButton.dataset.choice;
+            const question = currentQuiz[currentQuestionIndex];
+
+            document.getElementById('choice-a-btn').disabled = true;
+            document.getElementById('choice-b-btn').disabled = true;
+
+            const resultMsg = document.getElementById('result-message');
+            if (selectedChoice === question.correctAnswer) {
+                resultMsg.textContent = "正解！";
+                resultMsg.style.color = '#10B981';
+                selectedButton.classList.add('correct');
+            } else {
+                resultMsg.textContent = "不正解...";
+                resultMsg.style.color = '#EF4444';
+                selectedButton.classList.add('incorrect');
+                const correctBtn = question.correctAnswer === 'A' ? 'choice-a-btn' : 'choice-b-btn';
+                document.getElementById(correctBtn).classList.add('correct');
+            }
+            const nextBtn = document.getElementById('next-question-btn');
+            nextBtn.textContent = (currentQuestionIndex < currentQuiz.length - 1) ? '次の問題へ' : 'クイズ終了';
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentQuiz.length) {
+                displayQuestion();
+            } else {
+                showAlert('クイズ終了です！お疲れ様でした。');
+                showScreen('home-screen');
+            }
+        }
     </script>
 </body>
 </html>
+
