@@ -141,7 +141,7 @@
     <script type="module">
         // Firebase SDKのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- あなたのFirebaseプロジェクトの設定情報 ---
@@ -183,7 +183,6 @@
             });
         };
         
-        // ★ 新機能：アプリを無効化し、エラーメッセージを表示
         function disableApp(message) {
             const homeScreen = document.getElementById('home-screen');
             homeScreen.innerHTML = `
@@ -191,7 +190,7 @@
                     <h2 class="text-2xl font-bold mb-4">アプリ エラー</h2>
                     <p class="text-left whitespace-pre-wrap">${message}</p>
                 </div>`;
-            showScreen('home-screen'); // エラー表示を確実に行う
+            showScreen('home-screen');
         }
 
         // --- メイン処理 ---
@@ -200,10 +199,8 @@
                 if (user) {
                     userId = user.uid;
                 }
-                // ユーザーがnullでも、signInAnonymouslyが後続処理でエラーをハンドル
             });
             
-            // 匿名サインインを試みる
             signInAnonymously(auth).catch(error => {
                 console.error("Firebase Anonymous Sign-In Error:", error);
                 let errorMessage = `Firebaseへの接続中に予期せぬエラーが発生しました:\n${error.message}`;
@@ -236,36 +233,19 @@
             document.getElementById('choice-b-btn').addEventListener('click', handleChoice);
             document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
             
-            // 画像URLプレビュー機能（イベント委任）
             document.getElementById('questions-container').addEventListener('input', (e) => {
                 if (e.target.classList.contains('url-input')) {
                     const input = e.target;
-                    const previewImg = input.nextElementSibling; // inputの隣にあるimg要素を取得
-                    const rawUrl = input.value;
-                    const transformedUrl = transformGoogleDriveUrl(rawUrl);
+                    const previewImg = input.nextElementSibling;
+                    const url = input.value;
                     
-                    previewImg.src = transformedUrl || 'https://placehold.co/64x64/f3f4f6/f3f4f6?text=.';
+                    previewImg.src = url || 'https://placehold.co/64x64/f3f4f6/f3f4f6?text=.';
 
-                    // 画像が読み込めなかった場合のエラー処理
                     previewImg.onerror = () => {
                         previewImg.src = 'https://placehold.co/64x64/fecaca/991b1b?text=Error';
                     };
                 }
             });
-        }
-
-        // ★ 改善版：Google Drive URL変換 ---
-        function transformGoogleDriveUrl(url) {
-            if (typeof url !== 'string' || !url.includes('drive.google.com')) {
-                return url; // Google DriveのURLでなければそのまま返す
-            }
-            // 共有リンクからIDを抽出するための正規表現
-            const match = url.match(/drive\.google\.com\/(?:file\/d\/|uc\?id=|open\?id=)([a-zA-Z0-9_-]{28,})/);
-            if (match && match[1]) {
-                // 画像表示用のURLに変換
-                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-            }
-            return url; // IDが抽出できなければそのまま返す
         }
 
         // --- クイズ作成 ---
@@ -277,7 +257,7 @@
                     <h3 class="text-xl font-bold mb-4 text-gray-700">問題 ${questionCount}</h3>
                     <div class="space-y-4">
                         <div class="flex items-center space-x-2">
-                           <input type="text" class="question-image-url w-full p-2 border rounded url-input" placeholder="問題の画像URL (Google Driveなど)">
+                           <input type="text" class="question-image-url w-full p-2 border rounded url-input" placeholder="画像の直接リンク (.jpg/.png) を入力">
                            <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
                         </div>
                         <textarea class="question-text w-full p-2 border rounded" placeholder="問題文"></textarea>
@@ -285,7 +265,7 @@
                             <div class="choice-section bg-white p-4 rounded border">
                                 <p class="font-bold mb-2">選択肢 A</p>
                                 <div class="flex items-center space-x-2">
-                                    <input type="text" class="choice-a-image-url w-full p-2 border rounded url-input" placeholder="選択肢Aの画像URL">
+                                    <input type="text" class="choice-a-image-url w-full p-2 border rounded url-input" placeholder="選択肢Aの画像直接リンク">
                                     <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
                                 </div>
                                 <input type="text" class="choice-a-text w-full p-2 border rounded mt-2" placeholder="選択肢Aのテキスト">
@@ -293,7 +273,7 @@
                             <div class="choice-section bg-white p-4 rounded border">
                                 <p class="font-bold mb-2">選択肢 B</p>
                                 <div class="flex items-center space-x-2">
-                                    <input type="text" class="choice-b-image-url w-full p-2 border rounded url-input" placeholder="選択肢Bの画像URL">
+                                    <input type="text" class="choice-b-image-url w-full p-2 border rounded url-input" placeholder="選択肢Bの画像直接リンク">
                                     <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
                                 </div>
                                 <input type="text" class="choice-b-text w-full p-2 border rounded mt-2" placeholder="選択肢Bのテキスト">
@@ -388,20 +368,17 @@
             const aImg = document.getElementById('choice-a-image');
             const bImg = document.getElementById('choice-b-image');
             
-            const qImgUrl = transformGoogleDriveUrl(question.questionImage);
-            qImg.src = qImgUrl;
-            qImg.style.display = qImgUrl ? 'block' : 'none';
+            qImg.src = question.questionImage;
+            qImg.style.display = question.questionImage ? 'block' : 'none';
 
             document.getElementById('question-text').textContent = question.questionText;
 
-            const aImgUrl = transformGoogleDriveUrl(question.choiceAImage);
-            aImg.src = aImgUrl;
-            aImg.style.display = aImgUrl ? 'block' : 'none';
+            aImg.src = question.choiceAImage;
+            aImg.style.display = question.choiceAImage ? 'block' : 'none';
             document.getElementById('choice-a-text').textContent = question.choiceAText;
             
-            const bImgUrl = transformGoogleDriveUrl(question.choiceBImage);
-            bImg.src = bImgUrl;
-            bImg.style.display = bImgUrl ? 'block' : 'none';
+            bImg.src = question.choiceBImage;
+            bImg.style.display = question.choiceBImage ? 'block' : 'none';
             document.getElementById('choice-b-text').textContent = question.choiceBText;
 
             [document.getElementById('choice-a-btn'), document.getElementById('choice-b-btn')].forEach(btn => {
