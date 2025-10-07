@@ -135,16 +135,18 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase設定 (ご自身の情報に書き換えてください) ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            // apiKey: "...",
-            // authDomain: "...",
-            // projectId: "...",
-            // storageBucket: "...",
-            // messagingSenderId: "...",
-            // appId: "..."
+        // --- あなたのFirebaseプロジェクトの設定情報 ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5b_BSc9I5uQq-v8bW1NHWJ54cFUlu_sE",
+            authDomain: "quiz-gemini-f7b63.firebaseapp.com",
+            projectId: "quiz-gemini-f7b63",
+            storageBucket: "quiz-gemini-f7b63.appspot.com",
+            messagingSenderId: "335663897113",
+            appId: "1:335663897113:web:ef415c6d24f3aae695e888",
+            measurementId: "G-MJVBVDNYL8"
         };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const appId = "quiz-app"; // 任意のアプリID
         
         // Firebaseの初期化
         const app = initializeApp(firebaseConfig);
@@ -178,11 +180,7 @@
                 if (user) {
                     userId = user.uid;
                 } else {
-                    if (typeof __initial_auth_token !== 'undefined') {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    await signInAnonymously(auth);
                 }
             });
             setupEventListeners();
