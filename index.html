@@ -3,517 +3,465 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>計算プリント作成アプリ２</title>
+    <title>クイズアプリ</title>
+    <!-- Tailwind CSSを読み込み -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* 基本的なスタイル設定 */
         body {
-            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            font-family: 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
         }
-        /* 印刷時のスタイル */
-        @media print {
-            /* 画面上のUI要素はすべて非表示に */
-            body > *:not(#print-area) {
-                display: none;
-            }
-            /* 印刷エリアだけを表示 */
-            #print-area {
-                display: block !important;
-                margin: 0;
-                padding: 0;
-            }
-            #print-sheet {
-                box-shadow: none;
-                border: none;
-                margin: 0;
-                padding: 10mm;
-                width: 100%;
-                height: 100%;
-                page-break-after: always;
-            }
-            /* 印刷ボタンを非表示 */
-            #print-button-container {
-                display: none;
-            }
+        /* 各画面の表示・非表示を制御 */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* 画像プレビューのスタイル */
+        .image-preview {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            background-color: #e5e7eb; /* gray-200 */
         }
-        /* 画面表示用のA4サイズコンテナ */
-        #print-sheet {
-            background: white;
-            width: 210mm;
-            height: 297mm;
-            margin: 2rem auto;
-            /* 上、右、下、左 の順。左余白を増やす */
-            padding: 20mm 15mm 20mm 25mm;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
+        .form-image-preview {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+            border: 1px solid #d1d5db; /* gray-300 */
+             background-color: #f3f4f6; /* gray-100 */
+        }
+        
+        /* 選択肢ボタンのスタイル */
+        .choice-btn { transition: all 0.3s ease; }
+        /* --- 修正点：正解の色を「保存」ボタンと同じ緑に --- */
+        .correct { background-color: #22c55e !important; color: white !important; border-color: #22c55e !important; }
+        .incorrect { background-color: #fb923c !important; color: white !important; border-color: #fb923c !important; }
+
+        /* ローディングオーバーレイ */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); display: none;
+            justify-content: center; align-items: center; z-index: 9999;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3; border-top: 8px solid #3498db;
+            border-radius: 50%; width: 60px; height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* カスタムアラート */
+        #custom-alert {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); display: none;
+            justify-content: center; align-items: center; z-index: 9998;
+        }
+        #custom-alert-box {
+            background: white; padding: 2rem; border-radius: 1rem; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 90%; width: 400px;
+            white-space: pre-wrap; /* 改行を有効にする */
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-    <div class="container mx-auto p-4 sm:p-8 max-w-4xl">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-700">計算プリント作成アプリ２</h1>
-            <p class="text-gray-500 mt-2">問題の種類や範囲を自由に設定して、オリジナルの計算プリントを作成しましょう。</p>
-        </header>
-
-        <!-- 設定フォーム -->
-        <form id="settings-form" class="bg-white p-6 rounded-2xl shadow-lg mb-8 space-y-8">
-            
-            <!-- 1. 問題設定 -->
-            <fieldset>
-                <legend class="text-xl font-bold text-gray-700 mb-4 border-b-2 border-indigo-500 pb-2">1. 問題設定</legend>
-                <div id="problem-settings-container" class="space-y-4">
-                    <!-- 問題設定ブロックがここに追加されます -->
-                </div>
-                <button type="button" id="add-problem-btn" class="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                    問題の種類を追加
+    <div class="container mx-auto p-4 max-w-2xl bg-white rounded-2xl shadow-lg">
+        <!-- トップ画面 -->
+        <div id="home-screen" class="screen active text-center p-8">
+            <h1 class="text-4xl font-bold mb-12 text-gray-800">クイズつくろう</h1>
+            <div class="space-y-6">
+                <button id="go-to-create-btn" class="w-full bg-blue-500 text-white font-bold py-4 px-6 rounded-lg hover:bg-blue-600 transition duration-300 text-xl shadow-md">
+                    クイズを作る
                 </button>
-                <!-- エラーメッセージ表示エリア -->
-                <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mt-4" role="alert">
-                    <strong class="font-bold">エラー:</strong>
-                    <span class="block sm:inline" id="error-text"></span>
+                <div class="relative">
+                    <input type="text" id="quiz-name-input" placeholder="クイズ名を入力" class="w-full border-2 border-gray-300 p-4 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-lg">
+                    <button id="start-quiz-btn" class="absolute right-2 top-1/2 -translate-y-1/2 bg-green-500 text-white font-bold py-3 px-5 rounded-lg hover:bg-green-600 transition duration-300 text-lg shadow-md">
+                        クイズをする
+                    </button>
                 </div>
-            </fieldset>
-
-            <!-- 2. 全体の並び順設定 -->
-            <fieldset>
-                <legend class="text-xl font-bold text-gray-700 mb-4 border-b-2 border-indigo-500 pb-2">2. 全体の表示順</legend>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1">
-                        <input type="radio" name="global-order" value="created" checked class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                        <span class="ml-3 text-gray-700">作ったままの順</span>
-                    </label>
-                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1">
-                        <input type="radio" name="global-order" value="grouped" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                        <span class="ml-3 text-gray-700">ジャンルごとに固める</span>
-                    </label>
-                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 flex-1">
-                        <input type="radio" name="global-order" value="random" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                        <span class="ml-3 text-gray-700">全ジャンルでランダム</span>
-                    </label>
-                </div>
-            </fieldset>
-
-            <!-- 3. コメントの設定 -->
-            <fieldset>
-                <legend class="text-xl font-bold text-gray-700 mb-4 border-b-2 border-indigo-500 pb-2">コメントの設定</legend>
-                 <div class="space-y-4">
-                    <div>
-                        <label for="header-text" class="block text-sm font-medium text-gray-700 mb-1">問題文の右上にコメントを記入 (任意)</label>
-                        <input type="text" id="header-text" placeholder="(例: 10月13日)" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                    </div>
-                    <div>
-                        <label for="footer-comment" class="block text-sm font-medium text-gray-700 mb-1">問題文の最後にコメントを記入(任意)</label>
-                        <textarea id="footer-comment" rows="2" placeholder="（例：問題を作って書こう）" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
-                    </div>
-                </div>
-            </fieldset>
-
-            <!-- 操作ボタン -->
-            <div class="flex items-center justify-end gap-4 pt-4 border-t">
-                <button type="button" id="reset-btn" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">リセット</button>
-                <button type="submit" id="create-btn" class="px-6 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors shadow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">プリントを作成</button>
             </div>
-        </form>
+        </div>
 
+        <!-- クイズ作成画面 -->
+        <div id="create-screen" class="screen p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">クイズ作成</h2>
+                <button id="back-to-home-from-create" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-300">戻る</button>
+            </div>
+            <input type="text" id="quiz-title-input" placeholder="クイズのタイトル" class="w-full border-2 border-gray-300 p-3 mb-6 rounded-lg text-lg">
+            
+            <div id="questions-container" class="space-y-8">
+                <!-- 問題入力フォームはJSでここに追加されます -->
+            </div>
+
+            <div class="mt-8 flex space-x-4">
+                <button id="add-question-btn" class="flex-1 bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-300">問題を追加</button>
+                <button id="save-quiz-btn" class="flex-1 bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition duration-300">クイズを保存</button>
+            </div>
+        </div>
+
+        <!-- クイズ実行画面 -->
+        <div id="play-screen" class="screen p-6 relative">
+             <button id="back-to-home-from-play" class="absolute top-4 right-4 text-xs font-light text-gray-400 hover:text-gray-600 transition">クイズ終了</button>
+             <h2 id="quiz-title-display" class="text-left text-sm font-normal text-gray-500 mb-12"></h2>
+             <div id="question-area" class="text-center">
+                 <img id="question-image" src="" alt="問題の画像" class="mx-auto mb-4 rounded-lg shadow-md max-h-60" style="display:none;" >
+                 <p id="question-text" class="text-2xl font-semibold mb-8 text-gray-800 min-h-[3rem]"></p>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <button id="choice-a-btn" data-choice="A" class="choice-btn w-full border-2 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
+                         <img id="choice-a-image" src="" alt="選択肢Aの画像" class="mx-auto mb-2 image-preview" style="display:none;">
+                         <span id="choice-a-text" class="text-xl font-medium text-gray-700"></span>
+                     </button>
+                     <button id="choice-b-btn" data-choice="B" class="choice-btn w-full border-2 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
+                         <img id="choice-b-image" src="" alt="選択肢Bの画像" class="mx-auto mb-2 image-preview" style="display:none;">
+                         <span id="choice-b-text" class="text-xl font-medium text-gray-700"></span>
+                     </button>
+                 </div>
+                 <div id="result-area" class="mt-6 text-center">
+                     <p id="result-message" class="text-4xl font-bold"></p>
+                     <button id="next-question-btn" class="mt-4 bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition duration-300 text-lg hidden">次の問題へ</button>
+                 </div>
+             </div>
+        </div>
     </div>
 
-    <!-- 印刷プレビューエリア -->
-    <div id="print-area" class="hidden">
-        <div id="print-button-container" class="text-center my-4 flex justify-center gap-4">
-            <button id="toggle-answers-button" class="px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">解答を表示</button>
-            <button id="print-button" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="inline h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                印刷する
-            </button>
-        </div>
-        <div id="print-sheet">
-            <header class="flex justify-between items-center mb-8">
-                <span class="text-lg">なまえ＿＿＿＿＿＿＿＿＿＿＿＿</span>
-                <span id="print-header-text" class="text-lg"></span>
-            </header>
-            <main id="print-content" class="grow grid grid-cols-2 gap-x-16 gap-y-12 text-xl content-around">
-                <!-- 問題がここに挿入されます -->
-            </main>
-            <footer id="print-footer-comment" class="pt-4 text-base text-left text-gray-600">
-                <!-- コメントがここに挿入されます -->
-            </footer>
+    <!-- ローディング表示 -->
+    <div id="loader"><div class="spinner"></div></div>
+
+    <!-- カスタムアラート -->
+    <div id="custom-alert">
+        <div id="custom-alert-box">
+            <p id="custom-alert-message" class="mb-6 text-lg"></p>
+            <button id="custom-alert-ok" class="bg-blue-500 text-white font-bold py-2 px-8 rounded-lg hover:bg-blue-600">OK</button>
         </div>
     </div>
 
+    <script type="module">
+        // Firebase SDKのインポート
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('settings-form');
-            const addProblemBtn = document.getElementById('add-problem-btn');
-            const problemSettingsContainer = document.getElementById('problem-settings-container');
-            const errorMessage = document.getElementById('error-message');
-            const errorText = document.getElementById('error-text');
-            const printArea = document.getElementById('print-area');
-            const printContent = document.getElementById('print-content');
-            const printHeaderText = document.getElementById('print-header-text');
-            const printFooterComment = document.getElementById('print-footer-comment');
-            const printButton = document.getElementById('print-button');
-            const resetBtn = document.getElementById('reset-btn');
-            const toggleAnswersBtn = document.getElementById('toggle-answers-button');
-            const createBtn = document.getElementById('create-btn');
+        // --- あなたのFirebaseプロジェクトの設定情報 ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5b_BSc9I5uQq-v8bW1NHWJ54cFUlu_sE",
+            authDomain: "quiz-gemini-f7b63.firebaseapp.com",
+            projectId: "quiz-gemini-f7b63",
+            storageBucket: "quiz-gemini-f7b63.appspot.com",
+            messagingSenderId: "335663897113",
+            appId: "1:335663897113:web:ef415c6d24f3aae695e888",
+            measurementId: "G-MJVBVDNYL8"
+        };
 
-            let settingId = 0;
-            let answersVisible = false;
+        const appId = "quiz-app"; // 任意のアプリID
+        
+        // Firebaseの初期化
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-            // --- ユーティリティ ---
-            const showError = (msg) => {
-                errorText.textContent = msg;
-                errorMessage.classList.remove('hidden');
-            };
-            const hideError = () => {
-                if (!createBtn.disabled) { // only hide if not disabled by other error
-                    errorMessage.classList.add('hidden');
-                }
-            };
+        let userId = null;
+        let currentQuiz = null;
+        let currentQuestionIndex = 0;
 
-            const shuffleArray = (array) => {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-                return array;
-            };
-
-            // --- リアルタイム問題数チェック ---
-            const checkTotalProblems = () => {
-                const countInputs = problemSettingsContainer.querySelectorAll('input[id^="problem-count-"]');
-                let total = 0;
-                countInputs.forEach(input => {
-                    const val = parseInt(input.value);
-                    if (!isNaN(val) && val > 0) {
-                        total += val;
-                    }
-                });
-
-                if (total > 16) {
-                    showError(`合計問題数が16問を超えています。(現在: ${total}問)`);
-                    createBtn.disabled = true;
-                    createBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    hideError();
-                    createBtn.disabled = false;
-                    createBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-                return total;
-            };
-            
-            problemSettingsContainer.addEventListener('input', (e) => {
-                if(e.target.matches('input[id^="problem-count-"]')) {
-                    checkTotalProblems();
-                }
-            });
-
-
-            // --- UI制御 ---
-
-            // 問題設定ブロックを追加する
-            addProblemBtn.addEventListener('click', () => {
-                const id = settingId++;
-                const settingBlock = document.createElement('div');
-                settingBlock.className = 'p-4 border rounded-lg bg-gray-50 relative';
-                settingBlock.id = `setting-${id}`;
-                settingBlock.innerHTML = createSettingHTML(id);
-                problemSettingsContainer.appendChild(settingBlock);
-                
-                const typeSelect = settingBlock.querySelector(`#problem-type-${id}`);
-                // 動的に追加した要素にイベントリスナーを設定
-                typeSelect.addEventListener('change', (e) => {
-                    updateProblemTypeUI(id, e.target.value);
-                });
-                // 新しく追加したブロックのUIを初期化
-                updateProblemTypeUI(id, typeSelect.value);
-                checkTotalProblems();
-            });
-
-            // 設定ブロックのHTMLを生成
-            const createSettingHTML = (id) => `
-                <button type="button" onclick="removeSetting(${id})" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </button>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label for="problem-type-${id}" class="block text-sm font-medium text-gray-700">問題の種類</label>
-                        <select id="problem-type-${id}" data-id="${id}" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                            <option value="addition">足し算</option>
-                            <option value="subtraction">引き算</option>
-                            <option value="multiplication">かけ算</option>
-                        </select>
-                    </div>
-                    <div id="range-inputs-${id}" class="col-span-1 sm:col-span-2">
-                        <!-- ここに範囲設定UIが挿入される -->
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                    <div>
-                        <label for="problem-count-${id}" class="block text-sm font-medium text-gray-700">問題数</label>
-                        <input type="number" id="problem-count-${id}" min="1" max="16" value="5" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                    </div>
-                    <div class="col-span-1 sm:col-span-2">
-                        <label for="problem-order-${id}" class="block text-sm font-medium text-gray-700">問題の順番</label>
-                        <select id="problem-order-${id}" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                            <option value="random">ランダムに並べる</option>
-                            <option value="asc">小さい順に並べる</option>
-                        </select>
-                    </div>
-                </div>
-            `;
-            
-            // 問題の種類に応じてUIを更新
-            const updateProblemTypeUI = (id, type) => {
-                const container = document.getElementById(`range-inputs-${id}`);
-                let symbol;
-                switch(type) {
-                    case 'addition':
-                        symbol = '+';
-                        break;
-                    case 'subtraction':
-                        symbol = '−';
-                        break;
-                    case 'multiplication':
-                        symbol = '×';
-                        break;
-                }
-                
-                container.innerHTML = `
-                    <label class="block text-sm font-medium text-gray-700">範囲 (最小〜最大)</label>
-                    <div class="flex items-center gap-2 mt-1">
-                        <input type="number" id="min1-${id}" value="1" min="0" class="w-full text-center border-gray-300 rounded-md">
-                        <span>〜</span>
-                        <input type="number" id="max1-${id}" value="10" min="0" class="w-full text-center border-gray-300 rounded-md">
-                        <span class="text-xl font-bold mx-2">${symbol}</span>
-                        <input type="number" id="min2-${id}" value="1" min="0" class="w-full text-center border-gray-300 rounded-md">
-                        <span>〜</span>
-                        <input type="number" id="max2-${id}" value="10" min="0" class="w-full text-center border-gray-300 rounded-md">
-                    </div>
-                `;
-            };
-            
-            // 設定ブロックを削除
-            window.removeSetting = (id) => {
-                document.getElementById(`setting-${id}`).remove();
-                checkTotalProblems();
-            };
-
-            // 初期状態で足し算を一つ追加
-            addProblemBtn.click();
-
-            // --- メインロジック ---
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                printArea.classList.add('hidden');
-
-                const totalProblems = checkTotalProblems();
-                if (totalProblems > 16) return;
-
-                const settings = [];
-                const settingElements = problemSettingsContainer.children;
-
-                // 各設定ブロックから情報を収集
-                for (let i = 0; i < settingElements.length; i++) {
-                    const el = settingElements[i];
-                    const id = el.id.split('-')[1];
-                    const type = document.getElementById(`problem-type-${id}`).value;
-                    const countStr = document.getElementById(`problem-count-${id}`).value;
-                    const order = document.getElementById(`problem-order-${id}`).value;
-
-                    if (countStr === '' || parseInt(countStr) <= 0) {
-                        showError(`設定 ${i + 1}番目の問題数を1以上で入力してください。`);
-                        return;
-                    }
-                    const count = parseInt(countStr);
-                    
-                    const min1Val = document.getElementById(`min1-${id}`).value;
-                    const max1Val = document.getElementById(`max1-${id}`).value;
-                    const min2Val = document.getElementById(`min2-${id}`).value;
-                    const max2Val = document.getElementById(`max2-${id}`).value;
-
-                    if (min1Val === '' || max1Val === '' || min2Val === '' || max2Val === '') {
-                         showError(`設定 ${i + 1}番目の範囲に数字をすべて入力してください。`);
-                         return;
-                    }
-                    const range = {
-                        min1: parseInt(min1Val), max1: parseInt(max1Val),
-                        min2: parseInt(min2Val), max2: parseInt(max2Val),
-                    };
-                    if (range.min1 > range.max1 || range.min2 > range.max2) {
-                        showError(`設定 ${i + 1}番目の範囲指定が正しくありません（最小値 > 最大値）。`);
-                        return;
-                    }
-                    
-                    settings.push({ type, count, order, range });
-                }
-
-                // バリデーション
-                if (settings.length === 0) {
-                    showError('問題の種類を少なくとも1つ追加してください。');
-                    return;
-                }
-                if (totalProblems <= 0) {
-                    showError('問題数を1以上に設定してください。');
-                    return;
-                }
-                
-                // 問題生成
-                let problemGroups = [];
-                for (const setting of settings) {
-                    const generated = generateProblems(setting);
-                    if(generated.length < setting.count) {
-                        showError('指定された範囲と問題数では、重複しない問題を作成できませんでした。範囲を広げるか問題数を減らしてください。');
-                        return;
-                    }
-                    problemGroups.push(generated);
-                }
-                
-                // 全体の並び順
-                const globalOrder = document.querySelector('input[name="global-order"]:checked').value;
-                let allProblems = [];
-                if (globalOrder === 'grouped') {
-                    // ジャンルごとにまとめるロジックを修正
-                    const grouped = { addition: [], subtraction: [], multiplication: [] };
-                    problemGroups.forEach(group => {
-                        if (group.length > 0) {
-                            const type = group[0].type;
-                            grouped[type].push(...group);
-                        }
-                    });
-                    allProblems = [...grouped.addition, ...grouped.subtraction, ...grouped.multiplication];
-                } else if (globalOrder === 'random') {
-                    allProblems = shuffleArray(problemGroups.flat());
-                } else { // created
-                    allProblems = problemGroups.flat();
-                }
-
-                // 解答表示ボタンの状態をリセット
-                answersVisible = false;
-                toggleAnswersBtn.textContent = '解答を表示';
-
-                // プリント表示
-                displayPrint(allProblems);
-            });
-
-            // --- 問題生成 ---
-            const generateProblems = (setting) => {
-                const { type, count, range, order } = setting;
-                
-                // 全ての組み合わせ候補を生成
-                let candidates = [];
-                if (type === 'addition') {
-                    for (let i = range.min1; i <= range.max1; i++) {
-                        for (let j = range.min2; j <= range.max2; j++) {
-                            candidates.push({ q: `${i} + ${j}`, a: i + j, n1: i, n2: j, type: type });
-                        }
-                    }
-                } else if (type === 'subtraction') {
-                    for (let i = range.min1; i <= range.max1; i++) {
-                        for (let j = range.min2; j <= range.max2; j++) {
-                            if (i - j >= 0) {
-                                candidates.push({ q: `${i} − ${j}`, a: i - j, n1: i, n2: j, type: type });
-                            }
-                        }
-                    }
-                } else if (type === 'multiplication') {
-                    for (let i = range.min1; i <= range.max1; i++) {
-                        for (let j = range.min2; j <= range.max2; j++) {
-                            candidates.push({ q: `${i} × ${j}`, a: i * j, n1: i, n2: j, type: type });
-                        }
-                    }
-                }
-
-                // 並び替えと選択
-                let problems;
-                if (order === 'asc') {
-                    if (type === 'multiplication') {
-                        // かけ算で小さい順の場合: ランダムに指定数選んでからソート
-                        const shuffled = shuffleArray(candidates);
-                        const selected = shuffled.slice(0, count);
-                        selected.sort((a, b) => (a.n1 !== b.n1) ? a.n1 - b.n1 : a.n2 - b.n2);
-                        problems = selected;
-                    } else {
-                        // 足し算・引き算で小さい順の場合: 全体をソートしてから指定数選ぶ
-                        candidates.sort((a, b) => (a.n1 !== b.n1) ? a.n1 - b.n1 : a.n2 - b.n2);
-                        problems = candidates.slice(0, count);
-                    }
-                } else { // 'random'
-                    // ランダムの場合: 全体をシャッフルしてから指定数選ぶ
-                    const shuffled = shuffleArray(candidates);
-                    problems = shuffled.slice(0, count);
-                }
-                
-                return problems;
-            };
-
-            // --- 表示処理 ---
-            const displayPrint = (problems) => {
-                const headerText = document.getElementById('header-text').value;
-                const footerComment = document.getElementById('footer-comment').value;
-
-                printHeaderText.textContent = headerText;
-                printFooterComment.textContent = footerComment;
-                printContent.innerHTML = '';
-
-                problems.forEach((p) => {
-                    const problemEl = document.createElement('div');
-                    problemEl.className = 'flex items-baseline problem-item';
-                    problemEl.dataset.question = p.q;
-                    problemEl.dataset.answer = p.a;
-                    problemEl.innerHTML = `<span class="flex-1">${p.q}</span>`;
-                    printContent.appendChild(problemEl);
-                });
-
-                printArea.classList.remove('hidden');
-                // 表示後にスクロールしてプレビューを見せる
-                printArea.scrollIntoView({ behavior: 'smooth' });
-            };
-
-            // 解答表示切り替えボタンのイベント
-            toggleAnswersBtn.addEventListener('click', () => {
-                answersVisible = !answersVisible;
-                const problemItems = document.querySelectorAll('.problem-item');
-                
-                problemItems.forEach(item => {
-                    const question = item.dataset.question;
-                    const answer = item.dataset.answer;
-                    if (answersVisible) {
-                        item.innerHTML = `<span class="flex-1">${question} = <span class="font-bold text-blue-600">${answer}</span></span>`;
-                    } else {
-                        item.innerHTML = `<span class="flex-1">${question}</span>`;
-                    }
-                });
-                
-                toggleAnswersBtn.textContent = answersVisible ? '解答を隠す' : '解答を表示';
-            });
-            
-            // 印刷ボタンのイベント
-            printButton.addEventListener('click', () => {
-                window.print();
-            });
-
-            // リセットボタン
-            resetBtn.addEventListener('click', () => {
-                form.reset();
-                problemSettingsContainer.innerHTML = '';
-                addProblemBtn.click();
-                hideError();
-                createBtn.disabled = false;
-                createBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                printArea.classList.add('hidden');
-            });
-
+        // --- UI制御関数 ---
+        const loader = document.getElementById('loader');
+        const customAlert = document.getElementById('custom-alert');
+        const showLoader = (show) => { loader.style.display = show ? 'flex' : 'none'; };
+        const showAlert = (message) => {
+            document.getElementById('custom-alert-message').textContent = message;
+            customAlert.style.display = 'flex';
+        };
+        document.getElementById('custom-alert-ok').addEventListener('click', () => {
+            customAlert.style.display = 'none';
         });
+        const showScreen = (screenId) => {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.toggle('active', screen.id === screenId);
+            });
+        };
+        
+        function disableApp(message) {
+            const homeScreen = document.getElementById('home-screen');
+            homeScreen.innerHTML = `
+                <div class="p-8 text-center text-red-600 bg-red-50 rounded-lg">
+                    <h2 class="text-2xl font-bold mb-4">アプリ エラー</h2>
+                    <p class="text-left whitespace-pre-wrap">${message}</p>
+                </div>`;
+            showScreen('home-screen');
+        }
+
+        // --- メイン処理 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userId = user.uid;
+                }
+            });
+            
+            signInAnonymously(auth).catch(error => {
+                console.error("Firebase Anonymous Sign-In Error:", error);
+                let errorMessage = `Firebaseへの接続中に予期せぬエラーが発生しました:\n${error.message}`;
+                if (error.code === 'auth/configuration-not-found') {
+                     errorMessage = '【Firebase認証エラー】\n\n' +
+                                    '匿名サインインが有効になっていません。\n\n' +
+                                    '【解決策】\nFirebaseコンソールの「Authentication」設定で、「Sign-in method」タブから「匿名」プロバイダを有効にしてください。';
+                }
+                disableApp(errorMessage);
+            });
+
+            setupEventListeners();
+        });
+        
+        // --- イベントリスナー設定 ---
+        function setupEventListeners() {
+            document.getElementById('go-to-create-btn').addEventListener('click', () => {
+                if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
+                showScreen('create-screen');
+                document.getElementById('quiz-title-input').value = '';
+                document.getElementById('questions-container').innerHTML = '';
+                addQuestionForm();
+            });
+            document.getElementById('back-to-home-from-create').addEventListener('click', () => showScreen('home-screen'));
+            document.getElementById('back-to-home-from-play').addEventListener('click', () => showScreen('home-screen'));
+            document.getElementById('add-question-btn').addEventListener('click', addQuestionForm);
+            document.getElementById('save-quiz-btn').addEventListener('click', saveQuiz);
+            document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+            document.getElementById('choice-a-btn').addEventListener('click', handleChoice);
+            document.getElementById('choice-b-btn').addEventListener('click', handleChoice);
+            document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+            
+            document.getElementById('questions-container').addEventListener('input', (e) => {
+                if (e.target.classList.contains('url-input')) {
+                    const input = e.target;
+                    const previewImg = input.nextElementSibling;
+                    const url = input.value;
+                    
+                    previewImg.src = url || 'https://placehold.co/64x64/f3f4f6/f3f4f6?text=.';
+
+                    previewImg.onerror = () => {
+                        previewImg.src = 'https://placehold.co/64x64/fecaca/991b1b?text=Error';
+                    };
+                }
+            });
+
+            // --- 修正点：問題削除ボタンのイベントリスナー ---
+            document.getElementById('questions-container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-question-btn')) {
+                    const questionForm = e.target.closest('.question-form');
+                    if (questionForm) {
+                        questionForm.remove();
+                        renumberQuestions();
+                    }
+                }
+            });
+        }
+
+        // --- 修正点：問題番号を再採番する関数 ---
+        function renumberQuestions() {
+            const questionForms = document.querySelectorAll('.question-form');
+            questionForms.forEach((form, index) => {
+                const questionCount = index + 1;
+                form.querySelector('h3').textContent = `問題 ${questionCount}`;
+                
+                const radioInputs = form.querySelectorAll('input[type="radio"]');
+                radioInputs.forEach(radio => {
+                    const originalId = radio.id;
+                    const choice = originalId.split('-')[0];
+                    const newId = `${choice}-${questionCount}`;
+                    
+                    radio.name = `correct-answer-${questionCount}`;
+                    radio.id = newId;
+
+                    const label = form.querySelector(`label[for="${originalId}"]`);
+                    if (label) {
+                        label.htmlFor = newId;
+                    }
+                });
+            });
+        }
+
+
+        // --- クイズ作成 ---
+        function addQuestionForm() {
+            const container = document.getElementById('questions-container');
+            const questionCount = container.children.length + 1;
+            const formHtml = `
+                <div class="question-form bg-gray-50 p-6 rounded-lg border-2 border-dashed">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-700">問題 ${questionCount}</h3>
+                        <button type="button" class="delete-question-btn bg-red-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-600 transition duration-300 text-sm">削除</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-2">
+                           <input type="text" class="question-image-url w-full p-2 border rounded url-input" placeholder="画像の直接リンク (.jpg/.png) を入力">
+                           <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
+                        </div>
+                        <textarea class="question-text w-full p-2 border rounded" placeholder="問題文"></textarea>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="choice-section bg-white p-4 rounded border">
+                                <p class="font-bold mb-2">選択肢 A</p>
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" class="choice-a-image-url w-full p-2 border rounded url-input" placeholder="選択肢Aの画像直接リンク">
+                                    <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
+                                </div>
+                                <input type="text" class="choice-a-text w-full p-2 border rounded mt-2" placeholder="選択肢Aのテキスト">
+                            </div>
+                            <div class="choice-section bg-white p-4 rounded border">
+                                <p class="font-bold mb-2">選択肢 B</p>
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" class="choice-b-image-url w-full p-2 border rounded url-input" placeholder="選択肢Bの画像直接リンク">
+                                    <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
+                                </div>
+                                <input type="text" class="choice-b-text w-full p-2 border rounded mt-2" placeholder="選択肢Bのテキスト">
+                            </div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <p class="font-bold mb-2">正解は？</p>
+                            <div class="inline-flex rounded-md shadow-sm">
+                                <input type="radio" name="correct-answer-${questionCount}" value="A" class="hidden peer/a" id="a-${questionCount}" checked><label for="a-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg cursor-pointer peer-checked/a:bg-blue-500 peer-checked/a:text-white hover:bg-gray-100">A</label>
+                                <input type="radio" name="correct-answer-${questionCount}" value="B" class="hidden peer/b" id="b-${questionCount}"><label for="b-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md cursor-pointer peer-checked/b:bg-blue-500 peer-checked/b:text-white hover:bg-gray-100">B</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            container.insertAdjacentHTML('beforeend', formHtml);
+        }
+        
+        async function saveQuiz() {
+            if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
+            const title = document.getElementById('quiz-title-input').value.trim();
+            if (!title) { showAlert('クイズのタイトルを入力してください。'); return; }
+            const questionForms = document.querySelectorAll('.question-form');
+            if (questionForms.length === 0) { showAlert('最低1問は問題を作成してください。'); return; }
+            
+            showLoader(true);
+            try {
+                const newQuizData = Array.from(questionForms).map((form, index) => {
+                    const questionText = form.querySelector('.question-text').value.trim();
+                    const choiceAText = form.querySelector('.choice-a-text').value.trim();
+                    const choiceBText = form.querySelector('.choice-b-text').value.trim();
+                    if (!questionText || !choiceAText || !choiceBText) {
+                        throw new Error(`問題${index + 1}のテキストが入力されていません。`);
+                    }
+                    return {
+                        questionImage: form.querySelector('.question-image-url').value.trim(),
+                        questionText,
+                        choiceAImage: form.querySelector('.choice-a-image-url').value.trim(),
+                        choiceAText,
+                        choiceBImage: form.querySelector('.choice-b-image-url').value.trim(),
+                        choiceBText,
+                        correctAnswer: form.querySelector(`input[name^="correct-answer-"]:checked`).value
+                    };
+                });
+
+                const quizDoc = { title, questions: newQuizData, author: userId, createdAt: new Date() };
+                const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
+                await setDoc(doc(quizzesCol, title), quizDoc);
+
+                showAlert(`クイズ「${title}」を保存しました！`);
+                showScreen('home-screen');
+            } catch (error) {
+                showAlert(`保存エラー: ${error.message}`);
+            } finally {
+                showLoader(false);
+            }
+        }
+        
+        // --- クイズ実行 ---
+        async function startQuiz() {
+            if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
+            const quizName = document.getElementById('quiz-name-input').value.trim();
+            if (!quizName) { showAlert('クイズ名を入力してください。'); return; }
+
+            showLoader(true);
+            try {
+                const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
+                const q = query(quizzesCol, where("title", "==", quizName));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    showAlert('その名前のクイズは見つかりませんでした。');
+                } else {
+                    const quizDoc = querySnapshot.docs[0].data();
+                    currentQuiz = quizDoc.questions;
+                    currentQuestionIndex = 0;
+                    displayQuestion();
+                    showScreen('play-screen');
+                }
+            } catch (error) {
+                showAlert("クイズの読み込み中にエラーが発生しました。");
+            } finally {
+                showLoader(false);
+            }
+        }
+        
+        function displayQuestion() {
+            const question = currentQuiz[currentQuestionIndex];
+            const quizName = document.getElementById('quiz-name-input').value.trim();
+            document.getElementById('quiz-title-display').textContent = `${quizName} (${currentQuestionIndex + 1}/${currentQuiz.length})`;
+
+            const qImg = document.getElementById('question-image');
+            const aImg = document.getElementById('choice-a-image');
+            const bImg = document.getElementById('choice-b-image');
+            
+            qImg.src = question.questionImage;
+            qImg.style.display = question.questionImage ? 'block' : 'none';
+
+            document.getElementById('question-text').textContent = question.questionText;
+
+            aImg.src = question.choiceAImage;
+            aImg.style.display = question.choiceAImage ? 'block' : 'none';
+            document.getElementById('choice-a-text').textContent = question.choiceAText;
+            
+            bImg.src = question.choiceBImage;
+            bImg.style.display = question.choiceBImage ? 'block' : 'none';
+            document.getElementById('choice-b-text').textContent = question.choiceBText;
+
+            [document.getElementById('choice-a-btn'), document.getElementById('choice-b-btn')].forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('correct', 'incorrect');
+            });
+            document.getElementById('result-message').textContent = '';
+            document.getElementById('next-question-btn').classList.add('hidden');
+        }
+
+        function handleChoice(e) {
+            const selectedButton = e.currentTarget;
+            const selectedChoice = selectedButton.dataset.choice;
+            const question = currentQuiz[currentQuestionIndex];
+
+            document.getElementById('choice-a-btn').disabled = true;
+            document.getElementById('choice-b-btn').disabled = true;
+
+            const resultMsg = document.getElementById('result-message');
+            if (selectedChoice === question.correctAnswer) {
+                resultMsg.textContent = "正解！";
+                // --- 修正点：メッセージの色を緑系に ---
+                resultMsg.style.color = '#16a34a'; // green-600
+                selectedButton.classList.add('correct');
+            } else {
+                resultMsg.textContent = "不正解...";
+                resultMsg.style.color = '#ea580c'; // orange-600
+                selectedButton.classList.add('incorrect');
+                const correctBtn = question.correctAnswer === 'A' ? 'choice-a-btn' : 'choice-b-btn';
+                document.getElementById(correctBtn).classList.add('correct');
+            }
+            const nextBtn = document.getElementById('next-question-btn');
+            nextBtn.textContent = (currentQuestionIndex < currentQuiz.length - 1) ? '次の問題へ' : 'クイズ終了';
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentQuiz.length) {
+                displayQuestion();
+            } else {
+                showAlert('クイズ終了です！お疲れ様でした。');
+                showScreen('home-screen');
+            }
+        }
     </script>
 </body>
 </html>
