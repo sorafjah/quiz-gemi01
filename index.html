@@ -34,9 +34,19 @@
         
         /* 選択肢ボタンのスタイル */
         .choice-btn { transition: all 0.3s ease; }
-        /* --- 修正点：正解の色を「保存」ボタンと同じ緑に --- */
-        .correct { background-color: #22c55e !important; color: white !important; border-color: #22c55e !important; }
-        .incorrect { background-color: #fb923c !important; color: white !important; border-color: #fb923c !important; }
+        /* --- 修正点：正解は緑の枠線、不正解は塗りつぶしなしに --- */
+        .correct {
+            border-color: #22c55e !important; /* green-500 */
+            border-width: 3px !important;
+            background-color: white !important;
+            color: #374151 !important; /* text-gray-700 */
+        }
+        .incorrect {
+            background-color: white !important;
+            color: #374151 !important; /* text-gray-700 */
+            border-color: #d1d5db !important; /* gray-300 */
+            opacity: 0.7;
+        }
 
         /* ローディングオーバーレイ */
         #loader {
@@ -101,9 +111,15 @@
                 <!-- 問題入力フォームはJSでここに追加されます -->
             </div>
 
-            <div class="mt-8 flex space-x-4">
-                <button id="add-question-btn" class="flex-1 bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-300">問題を追加</button>
-                <button id="save-quiz-btn" class="flex-1 bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition duration-300">クイズを保存</button>
+            <!-- --- 修正点：クイズ削除ボタンをテキストに変更し、下に配置 --- -->
+            <div>
+                <div class="mt-8 flex space-x-4">
+                    <button id="add-question-btn" class="w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-300">問題を追加</button>
+                    <button id="save-quiz-btn" class="w-full bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition duration-300">クイズを保存</button>
+                </div>
+                <div class="mt-2 text-right">
+                    <button id="delete-quiz-btn" class="text-gray-500 text-xs font-medium hover:text-red-600 hover:underline transition-colors duration-200">このクイズを削除</button>
+                </div>
             </div>
         </div>
 
@@ -147,7 +163,8 @@
         // Firebase SDKのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // --- 修正点：deleteDocをインポート ---
+        import { getFirestore, collection, query, where, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- あなたのFirebaseプロジェクトの設定情報 ---
         const firebaseConfig = {
@@ -211,8 +228,8 @@
                 let errorMessage = `Firebaseへの接続中に予期せぬエラーが発生しました:\n${error.message}`;
                 if (error.code === 'auth/configuration-not-found') {
                      errorMessage = '【Firebase認証エラー】\n\n' +
-                                    '匿名サインインが有効になっていません。\n\n' +
-                                    '【解決策】\nFirebaseコンソールの「Authentication」設定で、「Sign-in method」タブから「匿名」プロバイダを有効にしてください。';
+                                     '匿名サインインが有効になっていません。\n\n' +
+                                     '【解決策】\nFirebaseコンソールの「Authentication」設定で、「Sign-in method」タブから「匿名」プロバイダを有効にしてください。';
                 }
                 disableApp(errorMessage);
             });
@@ -233,8 +250,10 @@
             document.getElementById('back-to-home-from-play').addEventListener('click', () => showScreen('home-screen'));
             document.getElementById('add-question-btn').addEventListener('click', addQuestionForm);
             document.getElementById('save-quiz-btn').addEventListener('click', saveQuiz);
+            // --- 修正点：削除ボタンのリスナーを追加 ---
+            document.getElementById('delete-quiz-btn').addEventListener('click', deleteQuiz);
             document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
-            document.getElementById('edit-quiz-btn').addEventListener('click', editQuiz); // --- 修正点：編集ボタンのリスナー ---
+            document.getElementById('edit-quiz-btn').addEventListener('click', editQuiz);
             document.getElementById('choice-a-btn').addEventListener('click', handleChoice);
             document.getElementById('choice-b-btn').addEventListener('click', handleChoice);
             document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
@@ -296,7 +315,7 @@
                 <div class="question-form bg-gray-50 p-6 rounded-lg border-2 border-dashed">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-xl font-bold text-gray-700">問題 ${questionCount}</h3>
-                        <button type="button" class="delete-question-btn bg-gray-400 text-white font-bold py-1 px-3 rounded-lg hover:bg-gray-500 transition duration-300 text-sm">削除</button>
+                        <button type="button" class="delete-question-btn bg-gray-200 text-gray-600 text-xs font-medium py-1 px-2 rounded-md hover:bg-gray-300 hover:text-gray-800 transition duration-300">削除</button>
                     </div>
                     <div class="space-y-4">
                         <div class="flex items-center space-x-2">
@@ -373,8 +392,37 @@
                 showLoader(false);
             }
         }
+        
+        // --- 修正点：クイズ削除機能を追加 ---
+        async function deleteQuiz() {
+            if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
+            const title = document.getElementById('quiz-title-input').value.trim();
+            if (!title) {
+                showAlert('削除するクイズのタイトルがありません。\nタイトルを入力して削除してください。');
+                return;
+            }
 
-        // --- 修正点：クイズ編集機能 ---
+            showLoader(true);
+            try {
+                const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
+                const quizDocRef = doc(quizzesCol, title);
+
+                await deleteDoc(quizDocRef);
+
+                showAlert(`クイズ「${title}」を削除しました。`);
+                showScreen('home-screen');
+                document.getElementById('quiz-name-input').value = '';
+                document.getElementById('quiz-title-input').value = '';
+                document.getElementById('questions-container').innerHTML = '';
+
+            } catch (error) {
+                console.error("Error deleting quiz: ", error);
+                showAlert(`削除中にエラーが発生しました: ${error.message}`);
+            } finally {
+                showLoader(false);
+            }
+        }
+
         async function editQuiz() {
             if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
             const quizName = document.getElementById('quiz-name-input').value.trim();
@@ -505,12 +553,11 @@
                 resultMsg.style.color = '#16a34a'; // green-600
                 selectedButton.classList.add('correct');
             } else {
-                // --- 修正点：「不正解…」を「ざんねん…」に変更 ---
                 resultMsg.textContent = "ざんねん…";
                 resultMsg.style.color = '#ea580c'; // orange-600
                 selectedButton.classList.add('incorrect');
-                const correctBtn = question.correctAnswer === 'A' ? 'choice-a-btn' : 'choice-b-btn';
-                document.getElementById(correctBtn).classList.add('correct');
+                const correctBtnId = question.correctAnswer === 'A' ? 'choice-a-btn' : 'choice-b-btn';
+                document.getElementById(correctBtnId).classList.add('correct');
             }
             const nextBtn = document.getElementById('next-question-btn');
             nextBtn.textContent = (currentQuestionIndex < currentQuiz.length - 1) ? '次の問題へ' : 'クイズ終了';
@@ -529,4 +576,6 @@
     </script>
 </body>
 </html>
+
+
 
