@@ -4,74 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>クイズアプリ</title>
-    <!-- Tailwind CSSを読み込み -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 基本的なスタイル設定 */
         body {
             font-family: 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
         }
-        /* 各画面の表示・非表示を制御 */
         .screen { display: none; }
         .screen.active { display: block; }
 
-        /* 画像プレビューのスタイル */
         .image-preview {
-            width: 150px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 0.5rem;
-            background-color: #e5e7eb; /* gray-200 */
+            width: 150px; height: 150px; object-fit: cover;
+            border-radius: 0.5rem; background-color: #e5e7eb;
         }
         .form-image-preview {
-            width: 64px;
-            height: 64px;
-            object-fit: cover;
-            border-radius: 0.25rem;
-            border: 1px solid #d1d5db; /* gray-300 */
-             background-color: #f3f4f6; /* gray-100 */
+            width: 64px; height: 64px; object-fit: cover;
+            border-radius: 0.25rem; border: 1px solid #d1d5db; background-color: #f3f4f6;
         }
-        
-        /* 選択肢ボタンのスタイル */
+
         .choice-btn { transition: all 0.3s ease; }
-        /* --- 修正点：正解は緑の枠線、不正解は塗りつぶしなしに --- */
-        .correct {
-            border-color: #22c55e !important; /* green-500 */
-            border-width: 3px !important;
-            background-color: white !important;
-            color: #374151 !important; /* text-gray-700 */
-        }
-        .incorrect {
-            background-color: white !important;
-            color: #374151 !important; /* text-gray-700 */
-            border-color: #d1d5db !important; /* gray-300 */
-            opacity: 0.7;
-        }
+        .correct { border-color: #22c55e !important; border-width: 3px !important; background-color: #fff !important; color: #374151 !important; }
+        .incorrect { background-color: #fff !important; color: #374151 !important; border-color: #d1d5db !important; opacity: 0.7; }
 
-        /* ローディングオーバーレイ */
         #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); display: none;
-            justify-content: center; align-items: center; z-index: 9999;
+            position: fixed; inset: 0; display: none; justify-content: center; align-items: center; z-index: 9999;
+            background-color: rgba(0,0,0,.5);
         }
-        .spinner {
-            border: 8px solid #f3f3f3; border-top: 8px solid #3498db;
-            border-radius: 50%; width: 60px; height: 60px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spinner { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0);} 100% { transform: rotate(360deg);} }
 
-        /* カスタムアラート */
-        #custom-alert {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); display: none;
-            justify-content: center; align-items: center; z-index: 9998;
-        }
-        #custom-alert-box {
-            background: white; padding: 2rem; border-radius: 1rem; text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 90%; width: 400px;
-            white-space: pre-wrap; /* 改行を有効にする */
-        }
+        #custom-alert { position: fixed; inset: 0; display: none; justify-content: center; align-items: center; z-index: 9998; background: rgba(0,0,0,.5); }
+        #custom-alert-box { background:#fff; padding:2rem; border-radius:1rem; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,.1); max-width:90%; width:400px; white-space: pre-wrap; }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -84,7 +47,6 @@
                 <button id="go-to-create-btn" class="w-full bg-blue-500 text-white font-bold py-4 px-6 rounded-lg hover:bg-blue-600 transition duration-300 text-xl shadow-md">
                     クイズを作る
                 </button>
-                 <!-- --- 修正点：編集ボタンを追加 --- -->
                 <div class="flex items-center border-2 border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
                     <input type="text" id="quiz-name-input" placeholder="クイズ名を入力" class="w-full p-4 border-0 rounded-l-lg focus:ring-0 text-lg">
                     <div class="flex p-1">
@@ -106,12 +68,9 @@
                 <button id="back-to-home-from-create" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-300">戻る</button>
             </div>
             <input type="text" id="quiz-title-input" placeholder="クイズのタイトル" class="w-full border-2 border-gray-300 p-3 mb-6 rounded-lg text-lg">
-            
-            <div id="questions-container" class="space-y-8">
-                <!-- 問題入力フォームはJSでここに追加されます -->
-            </div>
 
-            <!-- --- 修正点：クイズ削除ボタンをテキストに変更し、下に配置 --- -->
+            <div id="questions-container" class="space-y-8"></div>
+
             <div>
                 <div class="mt-8 flex space-x-4">
                     <button id="add-question-btn" class="w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition duration-300">問題を追加</button>
@@ -125,26 +84,26 @@
 
         <!-- クイズ実行画面 -->
         <div id="play-screen" class="screen p-6 relative">
-             <button id="back-to-home-from-play" class="absolute top-4 right-4 text-xs font-light text-gray-400 hover:text-gray-600 transition">クイズ終了</button>
-             <h2 id="quiz-title-display" class="text-left text-sm font-normal text-gray-500 mb-12"></h2>
-             <div id="question-area" class="text-center">
-                 <img id="question-image" src="" alt="問題の画像" class="mx-auto mb-4 rounded-lg shadow-md max-h-60" style="display:none;" >
-                 <p id="question-text" class="text-2xl font-semibold mb-8 text-gray-800 min-h-[3rem]"></p>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <button id="choice-a-btn" data-choice="A" class="choice-btn w-full border-2 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
-                         <img id="choice-a-image" src="" alt="選択肢Aの画像" class="mx-auto mb-2 image-preview" style="display:none;">
-                         <span id="choice-a-text" class="text-xl font-medium text-gray-700"></span>
-                     </button>
-                     <button id="choice-b-btn" data-choice="B" class="choice-btn w-full border-2 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
-                         <img id="choice-b-image" src="" alt="選択肢Bの画像" class="mx-auto mb-2 image-preview" style="display:none;">
-                         <span id="choice-b-text" class="text-xl font-medium text-gray-700"></span>
-                     </button>
-                 </div>
-                 <div id="result-area" class="mt-6 text-center">
-                     <p id="result-message" class="text-4xl font-bold"></p>
-                     <button id="next-question-btn" class="mt-4 bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition duration-300 text-lg hidden">次の問題へ</button>
-                 </div>
-             </div>
+            <button id="back-to-home-from-play" class="absolute top-4 right-4 text-xs font-light text-gray-400 hover:text-gray-600 transition">クイズ終了</button>
+            <h2 id="quiz-title-display" class="text-left text-sm font-normal text-gray-500 mb-12"></h2>
+            <div id="question-area" class="text-center">
+                <img id="question-image" src="" alt="問題の画像" class="mx-auto mb-4 rounded-lg shadow-md max-h-60" style="display:none;">
+                <p id="question-text" class="text-2xl font-semibold mb-8 text-gray-800 min-h-[3rem]"></p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button id="choice-a-btn" data-choice="A" class="choice-btn w-full border-2 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
+                        <img id="choice-a-image" src="" alt="選択肢Aの画像" class="mx-auto mb-2 image-preview" style="display:none;">
+                        <span id="choice-a-text" class="text-xl font-medium text-gray-700"></span>
+                    </button>
+                    <button id="choice-b-btn" data-choice="B" class="choice-btn w-full border-2 border-blue-400 p-4 rounded-lg hover:bg-blue-100 transition duration-300 bg-white">
+                        <img id="choice-b-image" src="" alt="選択肢Bの画像" class="mx-auto mb-2 image-preview" style="display:none;">
+                        <span id="choice-b-text" class="text-xl font-medium text-gray-700"></span>
+                    </button>
+                </div>
+                <div id="result-area" class="mt-6 text-center">
+                    <p id="result-message" class="text-4xl font-bold"></p>
+                    <button id="next-question-btn" class="mt-4 bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-yellow-600 transition duration-300 text-lg hidden">次の問題へ</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -160,13 +119,12 @@
     </div>
 
     <script type="module">
-        // Firebase SDKのインポート
+        /* ================= Firebase SDK ================= */
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // --- 修正点：deleteDocをインポート ---
-        import { getFirestore, collection, query, where, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, setDoc, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- あなたのFirebaseプロジェクトの設定情報 ---
+        /* =============== Firebase 設定 =============== */
         const firebaseConfig = {
             apiKey: "AIzaSyA5b_BSc9I5uQq-v8bW1NHWJ54cFUlu_sE",
             authDomain: "quiz-gemini-f7b63.firebaseapp.com",
@@ -176,10 +134,9 @@
             appId: "1:335663897113:web:ef415c6d24f3aae695e888",
             measurementId: "G-MJVBVDNYL8"
         };
+        const appId = "quiz-app"; // 任意
 
-        const appId = "quiz-app"; // 任意のアプリID
-        
-        // Firebaseの初期化
+        /* =============== 初期化 =============== */
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -188,7 +145,10 @@
         let currentQuiz = null;
         let currentQuestionIndex = 0;
 
-        // --- UI制御関数 ---
+        // ★ 追加：ロード元のタイトルを保持（Save As 判定用）
+        let loadedQuizTitle = null;
+
+        /* =============== 共通UI =============== */
         const loader = document.getElementById('loader');
         const customAlert = document.getElementById('custom-alert');
         const showLoader = (show) => { loader.style.display = show ? 'flex' : 'none'; };
@@ -196,233 +156,313 @@
             document.getElementById('custom-alert-message').textContent = message;
             customAlert.style.display = 'flex';
         };
-        document.getElementById('custom-alert-ok').addEventListener('click', () => {
-            customAlert.style.display = 'none';
-        });
-        const showScreen = (screenId) => {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.toggle('active', screen.id === screenId);
-            });
-        };
-        
+        document.getElementById('custom-alert-ok').addEventListener('click', () => { customAlert.style.display = 'none'; });
+        const showScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); };
+
         function disableApp(message) {
-            const homeScreen = document.getElementById('home-screen');
-            homeScreen.innerHTML = `
-                <div class="p-8 text-center text-red-600 bg-red-50 rounded-lg">
-                    <h2 class="text-2xl font-bold mb-4">アプリ エラー</h2>
-                    <p class="text-left whitespace-pre-wrap">${message}</p>
-                </div>`;
+            const home = document.getElementById('home-screen');
+            home.innerHTML = `<div class="p-8 text-center text-red-600 bg-red-50 rounded-lg">
+                <h2 class="text-2xl font-bold mb-4">アプリ エラー</h2>
+                <p class="text-left whitespace-pre-wrap">${message}</p></div>`;
             showScreen('home-screen');
         }
 
-        // --- メイン処理 ---
-        document.addEventListener('DOMContentLoaded', () => {
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    userId = user.uid;
+        /* =============== 画像URL 正規化 / 表示補助 =============== */
+        function normalizeImageUrl(raw) {
+            if (!raw) return { url: "", ok: false, reason: "empty" };
+            const url = String(raw).trim();
+
+            // Google Photos（ページ/共有）は埋め込み不可
+            if (/^https?:\/\/photos\.google\.com\/photo\//.test(url)) return { url:"", ok:false, reason:"google_photos_page" };
+            if (/^https?:\/\/photos\.app\.goo\.gl\//.test(url))       return { url:"", ok:false, reason:"google_photos_share_link" };
+
+            // Google Drive パターン
+            let m = url.match(/https?:\/\/drive\.google\.com\/file\/d\/([^/]+)\//);
+            if (m && m[1]) return { url: `https://drive.google.com/uc?export=view&id=${m[1]}`, ok: true };
+            m = url.match(/https?:\/\/drive\.google\.com\/open\?id=([^&]+)/);
+            if (m && m[1]) return { url: `https://drive.google.com/uc?export=view&id=${m[1]}`, ok: true };
+            m = url.match(/https?:\/\/drive\.google\.com\/uc\?(?:[^#]*&)?id=([^&]+)/);
+            if (m && m[1]) return { url: `https://drive.google.com/uc?export=view&id=${m[1]}`, ok: true };
+
+            // Google Photos CDN（lh3）
+            if (/^https?:\/\/lh3\.googleusercontent\.com\/[A-Za-z0-9_\-]/.test(url)) {
+                if (!/[?=]/.test(url)) return { url: url + "=w1600", ok: true };
+                return { url, ok: true };
+            }
+
+            // fife（不安定）→とりあえずサイズ置換
+            if (/^https?:\/\/photos\.fife\.usercontent\.google\.com\//.test(url)) {
+                const replaced = url.replace(/\/s\d+(-no)?/i, "/s1600-no");
+                return { url: replaced, ok: true, warning: "fife_unstable" };
+            }
+
+            if (/^https?:\/\//.test(url)) return { url, ok: true };
+            return { url: "", ok: false, reason: "invalid" };
+        }
+
+        // プレビュー/本番共通：表示ヘルパー
+        function updateImgWithFallback(rawUrl, imgEl, onHide = null) {
+            const { url, ok, reason } = normalizeImageUrl(rawUrl || "");
+            imgEl.onerror = null;
+
+            if (!ok) {
+                imgEl.style.display = 'none';
+                if (onHide) onHide(reason);
+                return false;
+            }
+
+            // フォールバック：uc? が失敗したら thumbnail API
+            let triedFallback = false;
+            imgEl.onerror = () => {
+                if (!triedFallback) {
+                    triedFallback = true;
+                    const m = url.match(/\/uc\?export=view&id=([^&]+)/);
+                    if (m && m[1]) {
+                        imgEl.src = `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
+                        return;
+                    }
                 }
-            });
-            
+                imgEl.style.display = 'none';
+                if (onHide) onHide('load_error');
+            };
+
+            imgEl.src = url;
+            imgEl.style.display = 'block';
+            return true;
+        }
+
+        // 保存用 正規化
+        const norm = (u) => normalizeImageUrl(u || "").url || "";
+
+        /* =============== メイン =============== */
+        document.addEventListener('DOMContentLoaded', () => {
+            onAuthStateChanged(auth, user => { if (user) userId = user.uid; });
             signInAnonymously(auth).catch(error => {
                 console.error("Firebase Anonymous Sign-In Error:", error);
-                let errorMessage = `Firebaseへの接続中に予期せぬエラーが発生しました:\n${error.message}`;
+                let msg = `Firebaseへの接続中に予期せぬエラー:\n${error.message}`;
                 if (error.code === 'auth/configuration-not-found') {
-                     errorMessage = '【Firebase認証エラー】\n\n' +
-                                     '匿名サインインが有効になっていません。\n\n' +
-                                     '【解決策】\nFirebaseコンソールの「Authentication」設定で、「Sign-in method」タブから「匿名」プロバイダを有効にしてください。';
+                    msg = '【Firebase認証エラー】\n\n匿名サインインが無効です。\nFirebaseコンソール > Authentication > Sign-in method で「匿名」を有効にしてください。';
                 }
-                disableApp(errorMessage);
+                disableApp(msg);
             });
-
             setupEventListeners();
         });
-        
-        // --- イベントリスナー設定 ---
+
+        /* =============== イベント =============== */
         function setupEventListeners() {
             document.getElementById('go-to-create-btn').addEventListener('click', () => {
                 if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
+                loadedQuizTitle = null; // ★新規作成はロード元なし
                 showScreen('create-screen');
                 document.getElementById('quiz-title-input').value = '';
                 document.getElementById('questions-container').innerHTML = '';
                 addQuestionForm();
             });
+
             document.getElementById('back-to-home-from-create').addEventListener('click', () => showScreen('home-screen'));
             document.getElementById('back-to-home-from-play').addEventListener('click', () => showScreen('home-screen'));
             document.getElementById('add-question-btn').addEventListener('click', addQuestionForm);
             document.getElementById('save-quiz-btn').addEventListener('click', saveQuiz);
-            // --- 修正点：削除ボタンのリスナーを追加 ---
             document.getElementById('delete-quiz-btn').addEventListener('click', deleteQuiz);
             document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
             document.getElementById('edit-quiz-btn').addEventListener('click', editQuiz);
             document.getElementById('choice-a-btn').addEventListener('click', handleChoice);
             document.getElementById('choice-b-btn').addEventListener('click', handleChoice);
             document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
-            
+
+            // 入力中プレビュー（Drive正規化＋フォールバック）
             document.getElementById('questions-container').addEventListener('input', (e) => {
                 if (e.target.classList.contains('url-input')) {
                     const input = e.target;
                     const previewImg = input.nextElementSibling;
                     const url = input.value;
-                    
-                    previewImg.src = url || 'https://placehold.co/64x64/f3f4f6/f3f4f6?text=.';
-
-                    previewImg.onerror = () => {
+                    if (!url) {
+                        previewImg.style.display = 'none';
+                        return;
+                    }
+                    updateImgWithFallback(url, previewImg, () => {
                         previewImg.src = 'https://placehold.co/64x64/fecaca/991b1b?text=Error';
-                    };
+                        previewImg.style.display = 'block';
+                    });
                 }
             });
 
+            // 問題削除
             document.getElementById('questions-container').addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-question-btn')) {
-                    const questionForm = e.target.closest('.question-form');
-                    if (questionForm) {
-                        questionForm.remove();
-                        renumberQuestions();
-                    }
+                    const form = e.target.closest('.question-form');
+                    if (form) { form.remove(); renumberQuestions(); }
                 }
             });
         }
 
         function renumberQuestions() {
-            const questionForms = document.querySelectorAll('.question-form');
-            questionForms.forEach((form, index) => {
-                const questionCount = index + 1;
-                form.querySelector('h3').textContent = `問題 ${questionCount}`;
-                
-                const radioInputs = form.querySelectorAll('input[type="radio"]');
-                radioInputs.forEach(radio => {
-                    const originalId = radio.id;
-                    const choice = originalId.split('-')[0];
-                    const newId = `${choice}-${questionCount}`;
-                    
-                    radio.name = `correct-answer-${questionCount}`;
-                    radio.id = newId;
-
-                    const label = form.querySelector(`label[for="${originalId}"]`);
-                    if (label) {
-                        label.htmlFor = newId;
-                    }
+            const forms = document.querySelectorAll('.question-form');
+            forms.forEach((form, index) => {
+                const n = index + 1;
+                form.querySelector('h3').textContent = `問題 ${n}`;
+                const radios = form.querySelectorAll('input[type="radio"]');
+                radios.forEach(r => {
+                    const choice = r.id.split('-')[0]; // a-1 → a
+                    const newId = `${choice}-${n}`;
+                    const oldId = r.id;
+                    r.name = `correct-answer-${n}`;
+                    r.id = newId;
+                    const label = form.querySelector(`label[for="${oldId}"]`);
+                    if (label) label.htmlFor = newId;
                 });
             });
         }
 
-
-        // --- クイズ作成 ---
+        /* =============== 作成フォーム =============== */
         function addQuestionForm() {
             const container = document.getElementById('questions-container');
-            const questionCount = container.children.length + 1;
-            const formHtml = `
-                <div class="question-form bg-gray-50 p-6 rounded-lg border-2 border-dashed">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-gray-700">問題 ${questionCount}</h3>
-                        <button type="button" class="delete-question-btn bg-gray-200 text-gray-600 text-xs font-medium py-1 px-2 rounded-md hover:bg-gray-300 hover:text-gray-800 transition duration-300">削除</button>
+            const n = container.children.length + 1;
+            const html = `
+            <div class="question-form bg-gray-50 p-6 rounded-lg border-2 border-dashed">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-700">問題 ${n}</h3>
+                    <button type="button" class="delete-question-btn bg-gray-200 text-gray-600 text-xs font-medium py-1 px-2 rounded-md hover:bg-gray-300 hover:text-gray-800 transition">削除</button>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-2">
+                        <input type="text" class="question-image-url w-full p-2 border rounded url-input" placeholder="画像の公開リンク（Drive可）">
+                        <img alt="プレビュー" class="form-image-preview" style="display:none;">
                     </div>
-                    <div class="space-y-4">
-                        <div class="flex items-center space-x-2">
-                           <input type="text" class="question-image-url w-full p-2 border rounded url-input" placeholder="画像の直接リンク (.jpg/.png) を入力">
-                           <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
+                    <textarea class="question-text w-full p-2 border rounded" placeholder="問題文"></textarea>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="choice-section bg-white p-4 rounded border">
+                            <p class="font-bold mb-2">選択肢 A</p>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" class="choice-a-image-url w-full p-2 border rounded url-input" placeholder="選択肢Aの画像公開リンク">
+                                <img alt="プレビュー" class="form-image-preview" style="display:none;">
+                            </div>
+                            <input type="text" class="choice-a-text w-full p-2 border rounded mt-2" placeholder="選択肢Aのテキスト">
                         </div>
-                        <textarea class="question-text w-full p-2 border rounded" placeholder="問題文"></textarea>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="choice-section bg-white p-4 rounded border">
-                                <p class="font-bold mb-2">選択肢 A</p>
-                                <div class="flex items-center space-x-2">
-                                    <input type="text" class="choice-a-image-url w-full p-2 border rounded url-input" placeholder="選択肢Aの画像直接リンク">
-                                    <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
-                                </div>
-                                <input type="text" class="choice-a-text w-full p-2 border rounded mt-2" placeholder="選択肢Aのテキスト">
+                        <div class="choice-section bg-white p-4 rounded border">
+                            <p class="font-bold mb-2">選択肢 B</p>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" class="choice-b-image-url w-full p-2 border rounded url-input" placeholder="選択肢Bの画像公開リンク">
+                                <img alt="プレビュー" class="form-image-preview" style="display:none;">
                             </div>
-                            <div class="choice-section bg-white p-4 rounded border">
-                                <p class="font-bold mb-2">選択肢 B</p>
-                                <div class="flex items-center space-x-2">
-                                    <input type="text" class="choice-b-image-url w-full p-2 border rounded url-input" placeholder="選択肢Bの画像直接リンク">
-                                    <img src="https://placehold.co/64x64/f3f4f6/f3f4f6?text=." alt="プレビュー" class="form-image-preview">
-                                </div>
-                                <input type="text" class="choice-b-text w-full p-2 border rounded mt-2" placeholder="選択肢Bのテキスト">
-                            </div>
-                        </div>
-                        <div class="text-center mt-2">
-                            <p class="font-bold mb-2">正解は？</p>
-                            <div class="inline-flex rounded-md shadow-sm">
-                                <input type="radio" name="correct-answer-${questionCount}" value="A" class="hidden peer/a" id="a-${questionCount}" checked><label for="a-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg cursor-pointer peer-checked/a:bg-blue-500 peer-checked/a:text-white hover:bg-gray-100">A</label>
-                                <input type="radio" name="correct-answer-${questionCount}" value="B" class="hidden peer/b" id="b-${questionCount}"><label for="b-${questionCount}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md cursor-pointer peer-checked/b:bg-blue-500 peer-checked/b:text-white hover:bg-gray-100">B</label>
-                            </div>
+                            <input type="text" class="choice-b-text w-full p-2 border rounded mt-2" placeholder="選択肢Bのテキスト">
                         </div>
                     </div>
-                </div>`;
-            container.insertAdjacentHTML('beforeend', formHtml);
+                    <div class="text-center mt-2">
+                        <p class="font-bold mb-2">正解は？</p>
+                        <div class="inline-flex rounded-md shadow-sm">
+                            <input type="radio" name="correct-answer-${n}" value="A" class="hidden peer/a" id="a-${n}" checked>
+                            <label for="a-${n}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg cursor-pointer peer-checked/a:bg-blue-500 peer-checked/a:text-white hover:bg-gray-100">A</label>
+                            <input type="radio" name="correct-answer-${n}" value="B" class="hidden peer/b" id="b-${n}">
+                            <label for="b-${n}" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md cursor-pointer peer-checked/b:bg-blue-500 peer-checked/b:text-white hover:bg-gray-100">B</label>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            container.insertAdjacentHTML('beforeend', html);
         }
-        
+
+        /* =============== 保存（Save / Save As） =============== */
         async function saveQuiz() {
             if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
-            const title = document.getElementById('quiz-title-input').value.trim();
-            if (!title) { showAlert('クイズのタイトルを入力してください。'); return; }
-            const questionForms = document.querySelectorAll('.question-form');
-            if (questionForms.length === 0) { showAlert('最低1問は問題を作成してください。'); return; }
-            
-            showLoader(true);
+
+            const titleInput = document.getElementById('quiz-title-input');
+            const requestedTitle = titleInput.value.trim();
+            if (!requestedTitle) { showAlert('クイズのタイトルを入力してください。'); return; }
+
+            const forms = document.querySelectorAll('.question-form');
+            if (forms.length === 0) { showAlert('最低1問は問題を作成してください。'); return; }
+
+            // 入力検証 & オブジェクト化
+            let questions = [];
             try {
-                const newQuizData = Array.from(questionForms).map((form, index) => {
+                questions = Array.from(forms).map((form, i) => {
                     const questionText = form.querySelector('.question-text').value.trim();
                     const choiceAText = form.querySelector('.choice-a-text').value.trim();
                     const choiceBText = form.querySelector('.choice-b-text').value.trim();
                     if (!questionText || !choiceAText || !choiceBText) {
-                        throw new Error(`問題${index + 1}のテキストが入力されていません。`);
+                        throw new Error(`問題${i + 1}のテキストが未入力です。`);
                     }
                     return {
-                        questionImage: form.querySelector('.question-image-url').value.trim(),
+                        questionImage: norm(form.querySelector('.question-image-url').value.trim()),
                         questionText,
-                        choiceAImage: form.querySelector('.choice-a-image-url').value.trim(),
+                        choiceAImage: norm(form.querySelector('.choice-a-image-url').value.trim()),
                         choiceAText,
-                        choiceBImage: form.querySelector('.choice-b-image-url').value.trim(),
+                        choiceBImage: norm(form.querySelector('.choice-b-image-url').value.trim()),
                         choiceBText,
                         correctAnswer: form.querySelector(`input[name^="correct-answer-"]:checked`).value
                     };
                 });
+            } catch (e) {
+                showAlert(`保存エラー: ${e.message}`);
+                return;
+            }
 
-                const quizDoc = { title, questions: newQuizData, author: userId, createdAt: new Date() };
-                const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
-                await setDoc(doc(quizzesCol, title), quizDoc);
+            const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
 
-                showAlert(`クイズ「${title}」を保存しました！`);
+            // ★ Save As 判定：ロード元があり、かつタイトル変更 → 別名保存（元は残す）
+            const isSaveAs = !!loadedQuizTitle && requestedTitle !== loadedQuizTitle;
+            const targetTitle = isSaveAs ? requestedTitle : (loadedQuizTitle || requestedTitle);
+
+            const quizDoc = {
+                title: targetTitle,
+                questions,
+                author: userId,
+                updatedAt: new Date().toISOString()
+            };
+
+            // createdAt は新規 or Save As のとき付与
+            if (!loadedQuizTitle || isSaveAs) {
+                quizDoc.createdAt = new Date().toISOString();
+            } else {
+                // 同名上書き時、既存 createdAt を引き継げるなら引き継ぐ（任意）
+                try {
+                    const existing = await getDoc(doc(quizzesCol, targetTitle));
+                    if (existing.exists() && existing.data().createdAt) {
+                        quizDoc.createdAt = existing.data().createdAt;
+                    }
+                } catch(_) {}
+            }
+
+            showLoader(true);
+            try {
+                await setDoc(doc(quizzesCol, targetTitle), quizDoc);
+                loadedQuizTitle = targetTitle;               // ★ ここで現在のロード元名を更新
+                titleInput.value = targetTitle;
+                showAlert(isSaveAs ? `別名で保存しました：${targetTitle}` : `保存しました：${targetTitle}`);
                 showScreen('home-screen');
+                document.getElementById('quiz-name-input').value = targetTitle;
             } catch (error) {
                 showAlert(`保存エラー: ${error.message}`);
             } finally {
                 showLoader(false);
             }
         }
-        
-        // --- 修正点：クイズ削除機能を追加 ---
+
+        /* =============== 削除 =============== */
         async function deleteQuiz() {
             if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
             const title = document.getElementById('quiz-title-input').value.trim();
-            if (!title) {
-                showAlert('削除するクイズのタイトルがありません。\nタイトルを入力して削除してください。');
-                return;
-            }
+            if (!title) { showAlert('削除するクイズのタイトルがありません。'); return; }
 
             showLoader(true);
             try {
                 const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
-                const quizDocRef = doc(quizzesCol, title);
-
-                await deleteDoc(quizDocRef);
-
+                await deleteDoc(doc(quizzesCol, title));
                 showAlert(`クイズ「${title}」を削除しました。`);
                 showScreen('home-screen');
                 document.getElementById('quiz-name-input').value = '';
                 document.getElementById('quiz-title-input').value = '';
                 document.getElementById('questions-container').innerHTML = '';
-
+                loadedQuizTitle = null;
             } catch (error) {
-                console.error("Error deleting quiz: ", error);
-                showAlert(`削除中にエラーが発生しました: ${error.message}`);
+                showAlert(`削除エラー: ${error.message}`);
             } finally {
                 showLoader(false);
             }
         }
 
+        /* =============== 編集ロード =============== */
         async function editQuiz() {
             if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
             const quizName = document.getElementById('quiz-name-input').value.trim();
@@ -431,14 +471,22 @@
             showLoader(true);
             try {
                 const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
-                const q = query(quizzesCol, where("title", "==", quizName));
-                const querySnapshot = await getDocs(q);
+                // docID = title で保存している想定なので、直接取得できる
+                let snap = await getDoc(doc(quizzesCol, quizName));
 
-                if (querySnapshot.empty) {
+                // 互換：もし docID が任意で title フィールド検索が必要な場合
+                if (!snap.exists()) {
+                    const q = query(quizzesCol, where("title", "==", quizName));
+                    const qs = await getDocs(q);
+                    if (!qs.empty) snap = qs.docs[0];
+                }
+
+                if (!snap.exists()) {
                     showAlert('その名前のクイズは見つかりませんでした。');
                 } else {
-                    const quizDoc = querySnapshot.docs[0].data();
-                    populateCreateScreen(quizDoc);
+                    const quizData = snap.data();
+                    populateCreateScreen(quizData);
+                    loadedQuizTitle = quizData.title || quizName;  // ★ ロード元名を記録
                     showScreen('create-screen');
                 }
             } catch (error) {
@@ -449,39 +497,38 @@
         }
 
         function populateCreateScreen(quizData) {
-            document.getElementById('quiz-title-input').value = quizData.title;
+            document.getElementById('quiz-title-input').value = quizData.title || '';
             const container = document.getElementById('questions-container');
-            container.innerHTML = ''; 
+            container.innerHTML = '';
 
-            quizData.questions.forEach((question, index) => {
+            (quizData.questions || []).forEach((q, idx) => {
                 addQuestionForm();
-                const questionForms = document.querySelectorAll('.question-form');
-                const form = questionForms[index]; 
+                const form = document.querySelectorAll('.question-form')[idx];
 
-                form.querySelector('.question-image-url').value = question.questionImage || '';
-                form.querySelector('.question-text').value = question.questionText || '';
-                form.querySelector('.choice-a-image-url').value = question.choiceAImage || '';
-                form.querySelector('.choice-a-text').value = question.choiceAText || '';
-                form.querySelector('.choice-b-image-url').value = question.choiceBImage || '';
-                form.querySelector('.choice-b-text').value = question.choiceBText || '';
-                
-                const radio = form.querySelector(`input[value="${question.correctAnswer}"]`);
+                form.querySelector('.question-image-url').value = q.questionImage || '';
+                form.querySelector('.question-text').value      = q.questionText  || '';
+                form.querySelector('.choice-a-image-url').value = q.choiceAImage  || '';
+                form.querySelector('.choice-a-text').value      = q.choiceAText   || '';
+                form.querySelector('.choice-b-image-url').value = q.choiceBImage  || '';
+                form.querySelector('.choice-b-text').value      = q.choiceBText   || '';
+
+                const radio = form.querySelector(`input[value="${q.correctAnswer}"]`);
                 if (radio) radio.checked = true;
 
-                form.querySelectorAll('.url-input').forEach(input => {
-                    const previewImg = input.nextElementSibling;
+                // 初期プレビュー（正規化＋フォールバック）
+                form.querySelectorAll('.url-input').forEach((input) => {
+                    const preview = input.nextElementSibling;
                     const url = input.value;
-                    if (url) {
-                       previewImg.src = url;
-                       previewImg.onerror = () => {
-                           previewImg.src = 'https://placehold.co/64x64/fecaca/991b1b?text=Error';
-                       };
-                    }
+                    if (!url) { preview.style.display = 'none'; return; }
+                    updateImgWithFallback(url, preview, () => {
+                        preview.src = 'https://placehold.co/64x64/fecaca/991b1b?text=Error';
+                        preview.style.display = 'block';
+                    });
                 });
             });
         }
-        
-        // --- クイズ実行 ---
+
+        /* =============== 実行 =============== */
         async function startQuiz() {
             if (!userId) { showAlert('Firebaseに接続できていません。設定を確認してください。'); return; }
             const quizName = document.getElementById('quiz-name-input').value.trim();
@@ -490,14 +537,18 @@
             showLoader(true);
             try {
                 const quizzesCol = collection(db, "artifacts", appId, "public", "data", "quizzes");
-                const q = query(quizzesCol, where("title", "==", quizName));
-                const querySnapshot = await getDocs(q);
+                let snap = await getDoc(doc(quizzesCol, quizName));
+                if (!snap.exists()) {
+                    const q = query(quizzesCol, where("title", "==", quizName));
+                    const qs = await getDocs(q);
+                    if (!qs.empty) snap = qs.docs[0];
+                }
 
-                if (querySnapshot.empty) {
+                if (!snap.exists()) {
                     showAlert('その名前のクイズは見つかりませんでした。');
                 } else {
-                    const quizDoc = querySnapshot.docs[0].data();
-                    currentQuiz = quizDoc.questions;
+                    const quizDoc = snap.data();
+                    currentQuiz = quizDoc.questions || [];
                     currentQuestionIndex = 0;
                     displayQuestion();
                     showScreen('play-screen');
@@ -508,55 +559,56 @@
                 showLoader(false);
             }
         }
-        
+
         function displayQuestion() {
-            const question = currentQuiz[currentQuestionIndex];
+            const q = currentQuiz[currentQuestionIndex];
             const quizName = document.getElementById('quiz-name-input').value.trim();
             document.getElementById('quiz-title-display').textContent = `${quizName} (${currentQuestionIndex + 1}/${currentQuiz.length})`;
 
             const qImg = document.getElementById('question-image');
             const aImg = document.getElementById('choice-a-image');
             const bImg = document.getElementById('choice-b-image');
-            
-            qImg.src = question.questionImage;
-            qImg.style.display = question.questionImage ? 'block' : 'none';
 
-            document.getElementById('question-text').textContent = question.questionText;
+            // 本番表示も正規化＋フォールバック
+            if (q.questionImage) updateImgWithFallback(q.questionImage, qImg, () => { qImg.style.display = 'none'; });
+            else qImg.style.display = 'none';
 
-            aImg.src = question.choiceAImage;
-            aImg.style.display = question.choiceAImage ? 'block' : 'none';
-            document.getElementById('choice-a-text').textContent = question.choiceAText;
-            
-            bImg.src = question.choiceBImage;
-            bImg.style.display = question.choiceBImage ? 'block' : 'none';
-            document.getElementById('choice-b-text').textContent = question.choiceBText;
+            document.getElementById('question-text').textContent = q.questionText || '';
 
-            [document.getElementById('choice-a-btn'), document.getElementById('choice-b-btn')].forEach(btn => {
-                btn.disabled = false;
-                btn.classList.remove('correct', 'incorrect');
+            if (q.choiceAImage) updateImgWithFallback(q.choiceAImage, aImg, () => { aImg.style.display = 'none'; });
+            else aImg.style.display = 'none';
+            document.getElementById('choice-a-text').textContent = q.choiceAText || '';
+
+            if (q.choiceBImage) updateImgWithFallback(q.choiceBImage, bImg, () => { bImg.style.display = 'none'; });
+            else bImg.style.display = 'none';
+            document.getElementById('choice-b-text').textContent = q.choiceBText || '';
+
+            ['choice-a-btn','choice-b-btn'].forEach(id=>{
+                const btn = document.getElementById(id);
+                btn.disabled = false; btn.classList.remove('correct','incorrect');
             });
             document.getElementById('result-message').textContent = '';
             document.getElementById('next-question-btn').classList.add('hidden');
         }
 
         function handleChoice(e) {
-            const selectedButton = e.currentTarget;
-            const selectedChoice = selectedButton.dataset.choice;
-            const question = currentQuiz[currentQuestionIndex];
+            const btn = e.currentTarget;
+            const selected = btn.dataset.choice;
+            const q = currentQuiz[currentQuestionIndex];
 
             document.getElementById('choice-a-btn').disabled = true;
             document.getElementById('choice-b-btn').disabled = true;
 
-            const resultMsg = document.getElementById('result-message');
-            if (selectedChoice === question.correctAnswer) {
-                resultMsg.textContent = "正解！";
-                resultMsg.style.color = '#16a34a'; // green-600
-                selectedButton.classList.add('correct');
+            const result = document.getElementById('result-message');
+            if (selected === q.correctAnswer) {
+                result.textContent = "正解！";
+                result.style.color = '#16a34a';
+                btn.classList.add('correct');
             } else {
-                resultMsg.textContent = "ざんねん…";
-                resultMsg.style.color = '#ea580c'; // orange-600
-                selectedButton.classList.add('incorrect');
-                const correctBtnId = question.correctAnswer === 'A' ? 'choice-a-btn' : 'choice-b-btn';
+                result.textContent = "ざんねん…";
+                result.style.color = '#ea580c';
+                btn.classList.add('incorrect');
+                const correctBtnId = q.correctAnswer === 'A' ? 'choice-a-btn' : 'choice-b-btn';
                 document.getElementById(correctBtnId).classList.add('correct');
             }
             const nextBtn = document.getElementById('next-question-btn');
@@ -566,16 +618,9 @@
 
         function nextQuestion() {
             currentQuestionIndex++;
-            if (currentQuestionIndex < currentQuiz.length) {
-                displayQuestion();
-            } else {
-                showAlert('クイズ終了です！お疲れ様でした。');
-                showScreen('home-screen');
-            }
+            if (currentQuestionIndex < currentQuiz.length) displayQuestion();
+            else { showAlert('クイズ終了です！お疲れ様でした。'); showScreen('home-screen'); }
         }
     </script>
 </body>
 </html>
-
-
-
